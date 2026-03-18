@@ -27,13 +27,15 @@ async function callOcrSpace(apiKey: string, jpegBuffer: Buffer, engine: "1" | "2
   fd.append("OCREngine", engine)
   fd.append("scale", "false")
   fd.append("isTable", "false")
-  fd.append("file", new Blob([jpegBuffer], { type: "image/jpeg" }), "gt7.jpg")
+  const jpegUint8 = new Uint8Array(jpegBuffer)
+  fd.append("file", new Blob([jpegUint8], { type: "image/jpeg" }), "gt7.jpg")
 
   const res = await fetchWithTimeout(
     "https://api.ocr.space/parse/image",
     { method: "POST", body: fd },
     60000
   )
+
   const data = await res.json().catch(() => ({}))
   return { res, data }
 }
