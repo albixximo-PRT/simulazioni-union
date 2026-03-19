@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo, useRef, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 import { toPng } from "html-to-image"
 
 const APP_PASSWORD = "Gabus"
@@ -556,6 +556,15 @@ export default function Page() {
   const [authorized, setAuthorized] = useState(false)
   const [inputPassword, setInputPassword] = useState("")
   const [loginError, setLoginError] = useState("")
+  const [pulse, setPulse] = useState(0)
+
+useEffect(() => {
+  const id = setInterval(() => {
+    setPulse((p) => (p === 0 ? 1 : 0))
+  }, 1200)
+
+  return () => clearInterval(id)
+}, [])
 
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const exportRef = useRef<HTMLDivElement | null>(null)
@@ -681,9 +690,9 @@ export default function Page() {
       <div
         style={{
           width: "100%",
-          maxWidth: 640,
+          maxWidth: 760,
           borderRadius: 28,
-          padding: "44px 42px",
+          padding: "60px 52px",
           background: "rgba(14, 18, 32, 0.88)",
           border: "1px solid rgba(163, 95, 255, 0.34)",
           boxShadow:
@@ -693,25 +702,26 @@ export default function Page() {
           zIndex: 1,
         }}
       >
-        <div style={{ textAlign: "center", marginBottom: 32 }}>
+        <div style={{ textAlign: "center", marginBottom: 34 }}>
           <div
             style={{
-              width: "100%",
               display: "flex",
               justifyContent: "center",
-              alignItems: "center",
-              marginBottom: 20,
+              marginBottom: 28,
             }}
           >
             <img
               src="/union_logo.png"
               alt="Union"
               style={{
-                width: 220,
+                width: 280,
+                maxWidth: "90%",
                 height: "auto",
-                display: "block",
-                filter:
-                  "drop-shadow(0 0 30px rgba(255,255,255,0.16)) drop-shadow(0 0 42px rgba(160,90,255,0.28))",
+                transition: "all 0.6s ease",
+                transform: pulse ? "scale(1.04)" : "scale(1)",
+                filter: pulse
+                  ? "drop-shadow(0 0 25px rgba(255,215,0,0.9)) drop-shadow(0 0 60px rgba(255,215,0,0.6))"
+                  : "drop-shadow(0 0 10px rgba(255,215,0,0.4)) drop-shadow(0 0 25px rgba(160,90,255,0.3))",
               }}
             />
           </div>
@@ -730,7 +740,7 @@ export default function Page() {
               color: "rgba(255,215,0,0.96)",
               background: "rgba(255,215,0,0.10)",
               border: "1px solid rgba(255,215,0,0.22)",
-              marginBottom: 16,
+              marginBottom: 18,
             }}
           >
             Accesso riservato
@@ -739,11 +749,11 @@ export default function Page() {
           <h1
             style={{
               margin: 0,
-              fontSize: 42,
+              fontSize: 52,
               fontWeight: 900,
               letterSpacing: "-0.04em",
               textTransform: "uppercase",
-              textShadow: "0 0 20px rgba(255,215,0,0.18)",
+              textShadow: "0 0 22px rgba(255,215,0,0.18)",
               lineHeight: 1.02,
             }}
           >
@@ -752,8 +762,8 @@ export default function Page() {
 
           <p
             style={{
-              margin: "16px 0 0 0",
-              fontSize: 15,
+              margin: "18px 0 0 0",
+              fontSize: 16,
               color: "rgba(255,255,255,0.75)",
             }}
           >
@@ -761,7 +771,7 @@ export default function Page() {
           </p>
         </div>
 
-        <div style={{ display: "grid", gap: 14 }}>
+        <div style={{ display: "grid", gap: 16 }}>
           <input
             type="password"
             value={inputPassword}
@@ -773,13 +783,13 @@ export default function Page() {
             autoFocus
             style={{
               width: "100%",
-              height: 60,
+              height: 64,
               borderRadius: 16,
               border: "1px solid rgba(255,215,0,0.28)",
               background: "rgba(255,255,255,0.04)",
               color: "#ffffff",
-              padding: "0 18px",
-              fontSize: 16,
+              padding: "0 20px",
+              fontSize: 17,
               outline: "none",
               boxSizing: "border-box",
             }}
@@ -805,14 +815,14 @@ export default function Page() {
             disabled={!inputPassword.trim()}
             style={{
               width: "100%",
-              height: 60,
+              height: 64,
               borderRadius: 16,
               border: "1px solid rgba(255,215,0,0.35)",
               background: !inputPassword.trim()
                 ? "rgba(255,255,255,0.08)"
                 : "linear-gradient(135deg, rgba(255,215,0,0.96), rgba(255,190,40,0.94))",
               color: "#111522",
-              fontSize: 16,
+              fontSize: 17,
               fontWeight: 900,
               cursor: !inputPassword.trim() ? "not-allowed" : "pointer",
               boxShadow: "0 12px 30px rgba(255,215,0,0.18)",
@@ -826,7 +836,7 @@ export default function Page() {
 
         <div
           style={{
-            marginTop: 20,
+            marginTop: 22,
             textAlign: "center",
             fontSize: 10,
             color: "rgba(255,255,255,0.45)",
