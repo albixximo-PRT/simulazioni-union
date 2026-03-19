@@ -3,6 +3,8 @@
 import React, { useMemo, useRef, useState } from "react"
 import { toPng } from "html-to-image"
 
+const APP_PASSWORD = "Gabus"
+
 type UnionRow = {
   posizione: number
   nomePilota: string
@@ -455,26 +457,36 @@ function ResultsTable({
       </div>
 
       <div style={{ overflow: "visible" }}>
-  <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
-    <thead
-      style={{
-        position: "static",
-        top: 0,
-        zIndex: 2,
-        background: "rgba(10,12,18,0.92)",
-        backdropFilter: exporting ? undefined : "blur(10px)",
-      }}
-    >
+        <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+          <thead
+            style={{
+              position: "static",
+              top: 0,
+              zIndex: 2,
+              background: "rgba(10,12,18,0.92)",
+              backdropFilter: exporting ? undefined : "blur(10px)",
+            }}
+          >
             <tr>
               <th style={{ padding: "12px 12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 64 }}>#</th>
-              <th style={{ padding: "12px 12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 220 }}>Nome pilota</th>
+              <th style={{ padding: "12px 12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 220 }}>
+                Nome pilota
+              </th>
               <th style={{ padding: "12px 12px", textAlign: "left", fontSize: 12, opacity: 0.8 }}>Auto</th>
-              <th style={{ padding: "12px 12px", textAlign: "right", fontSize: 12, opacity: 0.8, width: 170 }}>Distacchi</th>
+              <th style={{ padding: "12px 12px", textAlign: "right", fontSize: 12, opacity: 0.8, width: 170 }}>
+                Distacchi
+              </th>
               <th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.8, width: 90 }}>PP</th>
               <th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.8, width: 90 }}>GV</th>
-              <th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.8, width: 90 }}>Gara</th>
-              <th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.8, width: 90 }}>Lobby</th>
-              <th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.8, width: 120 }}>Lega</th>
+              <th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.8, width: 90 }}>
+                Gara
+              </th>
+              <th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.8, width: 90 }}>
+                Lobby
+              </th>
+              <th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.8, width: 120 }}>
+                Lega
+              </th>
             </tr>
           </thead>
 
@@ -541,6 +553,10 @@ export default function Page() {
   const [showTable, setShowTable] = useState(true)
   const [showReq, setShowReq] = useState(false)
 
+  const [authorized, setAuthorized] = useState(false)
+  const [inputPassword, setInputPassword] = useState("")
+  const [loginError, setLoginError] = useState("")
+
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const exportRef = useRef<HTMLDivElement | null>(null)
 
@@ -555,6 +571,16 @@ export default function Page() {
     const row = rows.find((r) => (r.gv || "").trim().toUpperCase() === "GV")
     return row?.nomePilota || ""
   }, [rows])
+
+  function handleLogin() {
+    if (inputPassword === APP_PASSWORD) {
+      setAuthorized(true)
+      setLoginError("")
+      return
+    }
+
+    setLoginError("Password errata")
+  }
 
   async function exportTablePng() {
     if (!exportRef.current || rows.length === 0) return
@@ -619,8 +645,164 @@ export default function Page() {
   }
 
   function resetAll() {
-  window.location.reload()
-}
+    window.location.reload()
+  }
+
+  if (!authorized) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          padding: 24,
+          color: "white",
+          fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial",
+          background:
+            "radial-gradient(1200px 600px at 15% 10%, rgba(255,215,0,0.14), transparent 50%)," +
+            "radial-gradient(900px 500px at 85% 20%, rgba(160,90,255,0.16), transparent 50%)," +
+            "linear-gradient(180deg, #0b0d12 0%, #07080c 100%)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 460,
+            borderRadius: 24,
+            padding: "34px 30px",
+            background: "rgba(14, 18, 32, 0.94)",
+            border: "1px solid rgba(163, 95, 255, 0.34)",
+            boxShadow: "0 0 40px rgba(120,70,255,0.18), 0 0 120px rgba(255,215,0,0.06)",
+            backdropFilter: "blur(10px)",
+          }}
+        >
+          <div style={{ textAlign: "center", marginBottom: 26 }}>
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "6px 12px",
+                borderRadius: 999,
+                fontSize: 12,
+                fontWeight: 800,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "rgba(255,215,0,0.96)",
+                background: "rgba(255,215,0,0.10)",
+                border: "1px solid rgba(255,215,0,0.22)",
+                marginBottom: 14,
+              }}
+            >
+              Accesso riservato
+            </div>
+
+            <h1
+              style={{
+                margin: 0,
+                fontSize: 32,
+                fontWeight: 900,
+                lineHeight: 1.05,
+                color: "#ffffff",
+                letterSpacing: "-0.03em",
+                textTransform: "uppercase",
+                textShadow: "0 0 18px rgba(255,215,0,0.18)",
+              }}
+            >
+              Union Simulazioni
+            </h1>
+
+            <p
+              style={{
+                margin: "12px 0 0 0",
+                fontSize: 14,
+                lineHeight: 1.6,
+                color: "rgba(255,255,255,0.72)",
+              }}
+            >
+              Inserisci la password per accedere ad Albixximo Union Tools.
+            </p>
+          </div>
+
+          <div style={{ display: "grid", gap: 12 }}>
+            <input
+              type="password"
+              value={inputPassword}
+              onChange={(e) => setInputPassword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleLogin()
+              }}
+              placeholder="Inserisci password"
+              autoFocus
+              style={{
+                width: "100%",
+                height: 54,
+                borderRadius: 14,
+                border: "1px solid rgba(255,215,0,0.24)",
+                background: "rgba(255,255,255,0.04)",
+                color: "#ffffff",
+                padding: "0 16px",
+                fontSize: 15,
+                outline: "none",
+                boxSizing: "border-box",
+              }}
+            />
+
+            {loginError ? (
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "#ff9c9c",
+                  background: "rgba(255,80,80,0.08)",
+                  border: "1px solid rgba(255,80,80,0.22)",
+                  borderRadius: 12,
+                  padding: "10px 12px",
+                }}
+              >
+                {loginError}
+              </div>
+            ) : null}
+
+            <button
+              onClick={handleLogin}
+              disabled={!inputPassword.trim()}
+              style={{
+                width: "100%",
+                height: 54,
+                borderRadius: 14,
+                border: "1px solid rgba(255,215,0,0.35)",
+                background: !inputPassword.trim()
+                  ? "rgba(255,255,255,0.08)"
+                  : "linear-gradient(135deg, rgba(255,215,0,0.96), rgba(255,190,40,0.94))",
+                color: "#111522",
+                fontSize: 15,
+                fontWeight: 900,
+                cursor: !inputPassword.trim() ? "not-allowed" : "pointer",
+                boxShadow: !inputPassword.trim() ? "none" : "0 10px 30px rgba(255,215,0,0.18)",
+                transition: "all 0.2s ease",
+                textTransform: "uppercase",
+                letterSpacing: 0.6,
+              }}
+            >
+              Accedi
+            </button>
+          </div>
+
+          <div
+            style={{
+              marginTop: 18,
+              textAlign: "center",
+              fontSize: 12,
+              color: "rgba(255,255,255,0.45)",
+            }}
+          >
+            Area protetta • Union
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div
