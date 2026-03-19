@@ -649,160 +649,187 @@ export default function Page() {
   }
 
   if (!authorized) {
-    return (
+  return (
+    <div
+      style={{
+        position: "relative",
+        minHeight: "100vh",
+        padding: 24,
+        color: "white",
+        fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial",
+        background:
+          "radial-gradient(1200px 600px at 15% 10%, rgba(255,215,0,0.14), transparent 50%)," +
+          "radial-gradient(900px 500px at 85% 20%, rgba(160,90,255,0.16), transparent 50%)," +
+          "linear-gradient(180deg, #0b0d12 0%, #07080c 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "hidden",
+      }}
+    >
       <div
         style={{
-          minHeight: "100vh",
-          padding: 24,
-          color: "white",
-          fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial",
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background: "url('/union_logo.png') center / min(92vw, 980px) no-repeat",
+          opacity: 0.14,
+          filter:
+            "drop-shadow(0 0 120px rgba(160,90,255,0.55)) drop-shadow(0 0 80px rgba(255,215,0,0.30))",
+          transform: "scale(1.02)",
+        }}
+      />
+
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
           background:
-            "radial-gradient(1200px 600px at 15% 10%, rgba(255,215,0,0.14), transparent 50%)," +
-            "radial-gradient(900px 500px at 85% 20%, rgba(160,90,255,0.16), transparent 50%)," +
-            "linear-gradient(180deg, #0b0d12 0%, #07080c 100%)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
+            "radial-gradient(circle at center, rgba(10,12,18,0.18) 0%, rgba(10,12,18,0.38) 38%, rgba(7,8,12,0.78) 72%, rgba(7,8,12,0.92) 100%)",
+        }}
+      />
+
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 460,
+          borderRadius: 24,
+          padding: "34px 30px",
+          background: "rgba(14, 18, 32, 0.82)",
+          border: "1px solid rgba(163, 95, 255, 0.34)",
+          boxShadow: "0 0 40px rgba(120,70,255,0.18), 0 0 120px rgba(255,215,0,0.06)",
+          backdropFilter: "blur(12px)",
+          position: "relative",
+          zIndex: 1,
         }}
       >
-        <div
-          style={{
-            width: "100%",
-            maxWidth: 460,
-            borderRadius: 24,
-            padding: "34px 30px",
-            background: "rgba(14, 18, 32, 0.94)",
-            border: "1px solid rgba(163, 95, 255, 0.34)",
-            boxShadow: "0 0 40px rgba(120,70,255,0.18), 0 0 120px rgba(255,215,0,0.06)",
-            backdropFilter: "blur(10px)",
-          }}
-        >
-          <div style={{ textAlign: "center", marginBottom: 26 }}>
-            <div
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                padding: "6px 12px",
-                borderRadius: 999,
-                fontSize: 12,
-                fontWeight: 800,
-                letterSpacing: "0.08em",
-                textTransform: "uppercase",
-                color: "rgba(255,215,0,0.96)",
-                background: "rgba(255,215,0,0.10)",
-                border: "1px solid rgba(255,215,0,0.22)",
-                marginBottom: 14,
-              }}
-            >
-              Accesso riservato
-            </div>
-
-            <h1
-              style={{
-                margin: 0,
-                fontSize: 32,
-                fontWeight: 900,
-                lineHeight: 1.05,
-                color: "#ffffff",
-                letterSpacing: "-0.03em",
-                textTransform: "uppercase",
-                textShadow: "0 0 18px rgba(255,215,0,0.18)",
-              }}
-            >
-              Union Simulazioni
-            </h1>
-
-            <p
-              style={{
-                margin: "12px 0 0 0",
-                fontSize: 14,
-                lineHeight: 1.6,
-                color: "rgba(255,255,255,0.72)",
-              }}
-            >
-              Inserisci la password per accedere ad Albixximo Union Tools.
-            </p>
-          </div>
-
-          <div style={{ display: "grid", gap: 12 }}>
-            <input
-              type="password"
-              value={inputPassword}
-              onChange={(e) => setInputPassword(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleLogin()
-              }}
-              placeholder="Inserisci password"
-              autoFocus
-              style={{
-                width: "100%",
-                height: 54,
-                borderRadius: 14,
-                border: "1px solid rgba(255,215,0,0.24)",
-                background: "rgba(255,255,255,0.04)",
-                color: "#ffffff",
-                padding: "0 16px",
-                fontSize: 15,
-                outline: "none",
-                boxSizing: "border-box",
-              }}
-            />
-
-            {loginError ? (
-              <div
-                style={{
-                  fontSize: 13,
-                  color: "#ff9c9c",
-                  background: "rgba(255,80,80,0.08)",
-                  border: "1px solid rgba(255,80,80,0.22)",
-                  borderRadius: 12,
-                  padding: "10px 12px",
-                }}
-              >
-                {loginError}
-              </div>
-            ) : null}
-
-            <button
-              onClick={handleLogin}
-              disabled={!inputPassword.trim()}
-              style={{
-                width: "100%",
-                height: 54,
-                borderRadius: 14,
-                border: "1px solid rgba(255,215,0,0.35)",
-                background: !inputPassword.trim()
-                  ? "rgba(255,255,255,0.08)"
-                  : "linear-gradient(135deg, rgba(255,215,0,0.96), rgba(255,190,40,0.94))",
-                color: "#111522",
-                fontSize: 15,
-                fontWeight: 900,
-                cursor: !inputPassword.trim() ? "not-allowed" : "pointer",
-                boxShadow: !inputPassword.trim() ? "none" : "0 10px 30px rgba(255,215,0,0.18)",
-                transition: "all 0.2s ease",
-                textTransform: "uppercase",
-                letterSpacing: 0.6,
-              }}
-            >
-              Accedi
-            </button>
-          </div>
-
+        <div style={{ textAlign: "center", marginBottom: 26 }}>
           <div
             style={{
-              marginTop: 18,
-              textAlign: "center",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              padding: "6px 12px",
+              borderRadius: 999,
               fontSize: 12,
-              color: "rgba(255,255,255,0.45)",
+              fontWeight: 800,
+              letterSpacing: "0.08em",
+              textTransform: "uppercase",
+              color: "rgba(255,215,0,0.96)",
+              background: "rgba(255,215,0,0.10)",
+              border: "1px solid rgba(255,215,0,0.22)",
+              marginBottom: 14,
             }}
           >
-            Area protetta • Union
+            Accesso riservato
           </div>
+
+          <h1
+            style={{
+              margin: 0,
+              fontSize: 32,
+              fontWeight: 900,
+              lineHeight: 1.05,
+              color: "#ffffff",
+              letterSpacing: "-0.03em",
+              textTransform: "uppercase",
+              textShadow: "0 0 18px rgba(255,215,0,0.18)",
+            }}
+          >
+            Union Simulazioni
+          </h1>
+
+          <p
+            style={{
+              margin: "12px 0 0 0",
+              fontSize: 14,
+              lineHeight: 1.6,
+              color: "rgba(255,255,255,0.76)",
+            }}
+          >
+            Inserisci la password per accedere ad Albixximo Union Tools.
+          </p>
+        </div>
+
+        <div style={{ display: "grid", gap: 12 }}>
+          <input
+            type="password"
+            value={inputPassword}
+            onChange={(e) => setInputPassword(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleLogin()
+            }}
+            placeholder="Inserisci password"
+            autoFocus
+            style={{
+              width: "100%",
+              height: 54,
+              borderRadius: 14,
+              border: "1px solid rgba(255,215,0,0.24)",
+              background: "rgba(255,255,255,0.04)",
+              color: "#ffffff",
+              padding: "0 16px",
+              fontSize: 15,
+              outline: "none",
+              boxSizing: "border-box",
+            }}
+          />
+
+          {loginError ? (
+            <div
+              style={{
+                fontSize: 13,
+                color: "#ff9c9c",
+                background: "rgba(255,80,80,0.08)",
+                border: "1px solid rgba(255,80,80,0.22)",
+                borderRadius: 12,
+                padding: "10px 12px",
+              }}
+            >
+              {loginError}
+            </div>
+          ) : null}
+
+          <button
+            onClick={handleLogin}
+            disabled={!inputPassword.trim()}
+            style={{
+              width: "100%",
+              height: 54,
+              borderRadius: 14,
+              border: "1px solid rgba(255,215,0,0.35)",
+              background: !inputPassword.trim()
+                ? "rgba(255,255,255,0.08)"
+                : "linear-gradient(135deg, rgba(255,215,0,0.96), rgba(255,190,40,0.94))",
+              color: "#111522",
+              fontSize: 15,
+              fontWeight: 900,
+              cursor: !inputPassword.trim() ? "not-allowed" : "pointer",
+              boxShadow: !inputPassword.trim() ? "none" : "0 10px 30px rgba(255,215,0,0.18)",
+              transition: "all 0.2s ease",
+              textTransform: "uppercase",
+              letterSpacing: 0.6,
+            }}
+          >
+            Accedi
+          </button>
+        </div>
+
+        <div
+          style={{
+            marginTop: 18,
+            textAlign: "center",
+            fontSize: 12,
+            color: "rgba(255,255,255,0.45)",
+          }}
+        >
+          Area protetta • Union
         </div>
       </div>
-    )
-  }
+    </div>
+  )
+}
 
   return (
   <div
@@ -818,343 +845,331 @@ export default function Page() {
         "linear-gradient(180deg, #0b0d12 0%, #07080c 100%)",
     }}
   >
-    <div
-      style={{
-        position: "absolute",
-        inset: 0,
-        pointerEvents: "none",
-        background: "url('/union_logo.png') center / 420px no-repeat",
-        opacity: 0.05,
-        filter:
-          "drop-shadow(0 0 80px rgba(160,90,255,0.45)) drop-shadow(0 0 40px rgba(255,215,0,0.25))",
-      }}
-    />
+      <div style={{ maxWidth: 1320, margin: "0 auto" }}>
+        <AppHeader />
 
-    <div style={{ maxWidth: 1320, margin: "0 auto", position: "relative", zIndex: 1 }}>
-      <AppHeader />
-
-      <div
-        style={{
-          marginTop: 14,
-          borderRadius: 20,
-          border: "1px solid rgba(255,255,255,0.12)",
-          background: "rgba(255,255,255,0.05)",
-          boxShadow: "0 10px 40px rgba(0,0,0,0.35)",
-          overflow: "hidden",
-        }}
-      >
-        <div style={{ padding: 18, borderBottom: "1px solid rgba(255,255,255,0.10)" }}>
-          <div style={{ display: "flex", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
-              <HeaderBadge label="PP" value={ppPilot} variant="gold" />
-              <HeaderBadge label="GV" value={gvPilot} variant="violet" />
-              <HeaderBadge label="GARA" value={unionMeta.gara} variant="gold" />
-              <HeaderBadge label="LOBBY" value={unionMeta.lobby} variant="violet" />
-              <HeaderBadge label="LEGA" value={unionMeta.lega} variant="gold" />
-            </div>
-
-            <button
-              onClick={() => setShowReq((v) => !v)}
-              style={{
-                padding: "10px 12px",
-                borderRadius: 12,
-                border: "1px solid rgba(255,255,255,0.14)",
-                background: "rgba(0,0,0,0.18)",
-                color: "white",
-                cursor: "pointer",
-                fontWeight: 900,
-                letterSpacing: 0.4,
-                textTransform: "uppercase",
-                fontSize: 12,
-              }}
-              title="Mostra/Nascondi requisiti"
-            >
-              {showReq ? "Nascondi requisiti" : "Requisiti"}
-            </button>
-          </div>
-
-          {showReq && (
-            <div style={{ marginTop: 10, fontSize: 13, opacity: 0.82, lineHeight: 1.45 }}>
-              <div>
-                Minimo richiesto: <b>Qualifica 1–8</b> e <b>Gara 1–8</b>. Gli screen <b>9–N</b> sono opzionali.
+        <div
+          style={{
+            marginTop: 14,
+            borderRadius: 20,
+            border: "1px solid rgba(255,255,255,0.12)",
+            background: "rgba(255,255,255,0.05)",
+            boxShadow: "0 10px 40px rgba(0,0,0,0.35)",
+            overflow: "hidden",
+          }}
+        >
+          <div style={{ padding: 18, borderBottom: "1px solid rgba(255,255,255,0.10)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
+              <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
+                <HeaderBadge label="PP" value={ppPilot} variant="gold" />
+                <HeaderBadge label="GV" value={gvPilot} variant="violet" />
+                <HeaderBadge label="GARA" value={unionMeta.gara} variant="gold" />
+                <HeaderBadge label="LOBBY" value={unionMeta.lobby} variant="violet" />
+                <HeaderBadge label="LEGA" value={unionMeta.lega} variant="gold" />
               </div>
-              <div style={{ marginTop: 8, opacity: 0.85 }}>
-                Il CSV scaricato è già in formato <b>Union</b> con 9 colonne:
-                <b> #, Nome pilota, Auto, Distacchi, PP, GV, Gara, Lobby, Lega</b>.
-              </div>
-            </div>
-          )}
-        </div>
 
-        <div style={{ padding: 18, display: "grid", gap: 16 }}>
-          <div
-            style={{
-              borderRadius: 16,
-              border: "1px solid rgba(255,255,255,0.10)",
-              background: "rgba(0,0,0,0.18)",
-              padding: 14,
-              display: "grid",
-              gap: 12,
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-              <div style={{ fontWeight: 900, opacity: 0.95 }}>Caricamento immagini</div>
-
-              <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, opacity: 0.9 }}>
-                  <input
-                    type="checkbox"
-                    checked={showTable}
-                    onChange={(e) => setShowTable(e.target.checked)}
-                    style={{ transform: "scale(1.1)" }}
-                  />
-                  Mostra anteprima Union
-                </label>
-              </div>
-            </div>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              multiple
-              onChange={(e) => setFiles(Array.from(e.target.files || []))}
-              style={{ display: "none" }}
-            />
-
-            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
               <button
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() => setShowReq((v) => !v)}
                 style={{
-                  padding: "12px 16px",
-                  borderRadius: 14,
-                  border: "1px solid rgba(255,215,0,0.35)",
-                  background: "linear-gradient(180deg, rgba(255,215,0,0.18), rgba(0,0,0,0.10))",
+                  padding: "10px 12px",
+                  borderRadius: 12,
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  background: "rgba(0,0,0,0.18)",
                   color: "white",
-                  fontWeight: 900,
-                  letterSpacing: 0.6,
-                  textTransform: "uppercase",
                   cursor: "pointer",
-                  boxShadow: "0 0 24px rgba(255,215,0,0.12)",
+                  fontWeight: 900,
+                  letterSpacing: 0.4,
+                  textTransform: "uppercase",
+                  fontSize: 12,
                 }}
+                title="Mostra/Nascondi requisiti"
               >
-                Sfoglia file
+                {showReq ? "Nascondi requisiti" : "Requisiti"}
               </button>
-
-              <div style={{ fontSize: 12, opacity: 0.8 }}>
-                Carica 2–4 immagini (Qualifica + Gara). Ordine consigliato: Quali 1–8, Quali 9–N, Gara 1–8, Gara 9–N
-                <span style={{ opacity: 0 }}>.</span>
-              </div>
             </div>
 
-            {files.length > 0 && (
-              <div style={{ fontSize: 12, opacity: 0.88 }}>
-                <b>{files.length}</b> file selezionati
-                <div style={{ marginTop: 6, display: "grid", gap: 2 }}>
-                  {files.slice(0, 8).map((f) => (
-                    <div key={f.name} style={{ opacity: 0.86 }}>
-                      • {f.name}
-                    </div>
-                  ))}
-                  {files.length > 8 && <div style={{ opacity: 0.75 }}>• ... +{files.length - 8}</div>}
+            {showReq && (
+              <div style={{ marginTop: 10, fontSize: 13, opacity: 0.82, lineHeight: 1.45 }}>
+                <div>
+                  Minimo richiesto: <b>Qualifica 1–8</b> e <b>Gara 1–8</b>. Gli screen <b>9–N</b> sono opzionali.
+                </div>
+                <div style={{ marginTop: 8, opacity: 0.85 }}>
+                  Il CSV scaricato è già in formato <b>Union</b> con 9 colonne:
+                  <b> #, Nome pilota, Auto, Distacchi, PP, GV, Gara, Lobby, Lega</b>.
                 </div>
               </div>
             )}
           </div>
 
-          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-            <button
-              onClick={run}
-              disabled={loading || !canRun}
-              style={{
-                padding: "12px 16px",
-                borderRadius: 14,
-                border: "1px solid rgba(255,255,255,0.18)",
-                background: loading || !canRun ? "rgba(255,255,255,0.08)" : "rgba(255,215,0,0.18)",
-                color: "white",
-                fontWeight: 900,
-                letterSpacing: 0.6,
-                cursor: loading || !canRun ? "not-allowed" : "pointer",
-                boxShadow: loading || !canRun ? "none" : "0 0 22px rgba(255,215,0,0.12)",
-                textTransform: "uppercase",
-              }}
-            >
-              {loading ? "Elaborazione..." : "Genera CSV Union"}
-            </button>
-
-            <button
-              onClick={resetAll}
-              style={{
-                padding: "12px 14px",
-                borderRadius: 14,
-                border: "1px solid rgba(255,255,255,0.12)",
-                background: "rgba(255,255,255,0.06)",
-                color: "white",
-                cursor: "pointer",
-                opacity: 0.9,
-                textTransform: "uppercase",
-                fontWeight: 900,
-                letterSpacing: 0.4,
-                fontSize: 12,
-              }}
-            >
-              Reset
-            </button>
-
-            {!canRun && <div style={{ fontSize: 12, opacity: 0.75 }}>Seleziona almeno 2 immagini (Quali + Gara).</div>}
-          </div>
-
-          {rows.length > 0 && (
-            <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
-              <button
-                onClick={exportTablePng}
-                disabled={exporting}
-                style={{
-                  padding: "12px 16px",
-                  borderRadius: 14,
-                  border: "1px solid rgba(255,255,255,0.16)",
-                  background: exporting ? "rgba(255,255,255,0.08)" : "rgba(160,90,255,0.18)",
-                  color: "white",
-                  fontWeight: 900,
-                  letterSpacing: 0.6,
-                  cursor: exporting ? "not-allowed" : "pointer",
-                  boxShadow: exporting ? "none" : "0 0 22px rgba(160,90,255,0.12)",
-                  textTransform: "uppercase",
-                }}
-              >
-                {exporting ? "Esportazione PNG..." : "Esporta PNG tabella"}
-              </button>
-            </div>
-          )}
-
-          {warning && (
-            <div
-              style={{
-                whiteSpace: "pre-wrap",
-                color: "#ffd166",
-                background: "rgba(0,0,0,0.35)",
-                border: "1px solid rgba(255,255,255,0.10)",
-                padding: 12,
-                borderRadius: 14,
-              }}
-            >
-              {warning}
-            </div>
-          )}
-
-          {error && (
-            <pre
-              style={{
-                whiteSpace: "pre-wrap",
-                color: "#ff6b6b",
-                background: "rgba(0,0,0,0.35)",
-                border: "1px solid rgba(255,255,255,0.10)",
-                padding: 12,
-                borderRadius: 14,
-                overflowX: "auto",
-              }}
-            >
-              {error}
-            </pre>
-          )}
-
-          {showTable && rows.length > 0 && <ResultsTable previewRows={rows} />}
-
-          {csv && (
+          <div style={{ padding: 18, display: "grid", gap: 16 }}>
             <div
               style={{
                 borderRadius: 16,
                 border: "1px solid rgba(255,255,255,0.10)",
-                background: "rgba(0,0,0,0.22)",
+                background: "rgba(0,0,0,0.18)",
                 padding: 14,
                 display: "grid",
-                gap: 10,
+                gap: 12,
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                <div style={{ fontWeight: 900 }}>CSV Union Output</div>
-                <a
-                  href={"data:text/csv;charset=utf-8," + encodeURIComponent(csv)}
-                  download="albixximo_union.csv"
-                  style={{
-                    color: "white",
-                    textDecoration: "none",
-                    padding: "8px 12px",
-                    borderRadius: 12,
-                    border: "1px solid rgba(255,255,255,0.14)",
-                    background: "rgba(255,255,255,0.06)",
-                    fontSize: 13,
-                  }}
-                >
-                  Scarica CSV
-                </a>
+              <div style={{ display: "flex", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ fontWeight: 900, opacity: 0.95 }}>Caricamento immagini</div>
+
+                <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12, opacity: 0.9 }}>
+                    <input
+                      type="checkbox"
+                      checked={showTable}
+                      onChange={(e) => setShowTable(e.target.checked)}
+                      style={{ transform: "scale(1.1)" }}
+                    />
+                    Mostra anteprima Union
+                  </label>
+                </div>
               </div>
 
-              <textarea
-                value={csv}
-                readOnly
-                rows={14}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => setFiles(Array.from(e.target.files || []))}
+                style={{ display: "none" }}
+              />
+
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  style={{
+                    padding: "12px 16px",
+                    borderRadius: 14,
+                    border: "1px solid rgba(255,215,0,0.35)",
+                    background: "linear-gradient(180deg, rgba(255,215,0,0.18), rgba(0,0,0,0.10))",
+                    color: "white",
+                    fontWeight: 900,
+                    letterSpacing: 0.6,
+                    textTransform: "uppercase",
+                    cursor: "pointer",
+                    boxShadow: "0 0 24px rgba(255,215,0,0.12)",
+                  }}
+                >
+                  Sfoglia file
+                </button>
+
+                <div style={{ fontSize: 12, opacity: 0.8 }}>
+                  Carica 2–4 immagini (Qualifica + Gara). Ordine consigliato: Quali 1–8, Quali 9–N, Gara 1–8, Gara 9–N
+                  <span style={{ opacity: 0 }}>.</span>
+                </div>
+              </div>
+
+              {files.length > 0 && (
+                <div style={{ fontSize: 12, opacity: 0.88 }}>
+                  <b>{files.length}</b> file selezionati
+                  <div style={{ marginTop: 6, display: "grid", gap: 2 }}>
+                    {files.slice(0, 8).map((f) => (
+                      <div key={f.name} style={{ opacity: 0.86 }}>
+                        • {f.name}
+                      </div>
+                    ))}
+                    {files.length > 8 && <div style={{ opacity: 0.75 }}>• ... +{files.length - 8}</div>}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+              <button
+                onClick={run}
+                disabled={loading || !canRun}
                 style={{
-                  width: "100%",
+                  padding: "12px 16px",
                   borderRadius: 14,
-                  border: "1px solid rgba(255,255,255,0.10)",
-                  background: "rgba(0,0,0,0.35)",
+                  border: "1px solid rgba(255,255,255,0.18)",
+                  background: loading || !canRun ? "rgba(255,255,255,0.08)" : "rgba(255,215,0,0.18)",
                   color: "white",
-                  padding: 12,
-                  fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                  fontWeight: 900,
+                  letterSpacing: 0.6,
+                  cursor: loading || !canRun ? "not-allowed" : "pointer",
+                  boxShadow: loading || !canRun ? "none" : "0 0 22px rgba(255,215,0,0.12)",
+                  textTransform: "uppercase",
+                }}
+              >
+                {loading ? "Elaborazione..." : "Genera CSV Union"}
+              </button>
+
+              <button
+                onClick={resetAll}
+                style={{
+                  padding: "12px 14px",
+                  borderRadius: 14,
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  background: "rgba(255,255,255,0.06)",
+                  color: "white",
+                  cursor: "pointer",
+                  opacity: 0.9,
+                  textTransform: "uppercase",
+                  fontWeight: 900,
+                  letterSpacing: 0.4,
                   fontSize: 12,
                 }}
-              />
-            </div>
-          )}
+              >
+                Reset
+              </button>
 
-          <div
-            style={{
-              borderRadius: 14,
-              border: "1px solid rgba(255,255,255,0.10)",
-              background: "rgba(0,0,0,0.18)",
-              padding: "10px 12px",
-            }}
-          >
-            <LegendBare />
+              {!canRun && <div style={{ fontSize: 12, opacity: 0.75 }}>Seleziona almeno 2 immagini (Quali + Gara).</div>}
+            </div>
+
+            {rows.length > 0 && (
+              <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+                <button
+                  onClick={exportTablePng}
+                  disabled={exporting}
+                  style={{
+                    padding: "12px 16px",
+                    borderRadius: 14,
+                    border: "1px solid rgba(255,255,255,0.16)",
+                    background: exporting ? "rgba(255,255,255,0.08)" : "rgba(160,90,255,0.18)",
+                    color: "white",
+                    fontWeight: 900,
+                    letterSpacing: 0.6,
+                    cursor: exporting ? "not-allowed" : "pointer",
+                    boxShadow: exporting ? "none" : "0 0 22px rgba(160,90,255,0.12)",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {exporting ? "Esportazione PNG..." : "Esporta PNG tabella"}
+                </button>
+              </div>
+            )}
+
+            {warning && (
+              <div
+                style={{
+                  whiteSpace: "pre-wrap",
+                  color: "#ffd166",
+                  background: "rgba(0,0,0,0.35)",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  padding: 12,
+                  borderRadius: 14,
+                }}
+              >
+                {warning}
+              </div>
+            )}
+
+            {error && (
+              <pre
+                style={{
+                  whiteSpace: "pre-wrap",
+                  color: "#ff6b6b",
+                  background: "rgba(0,0,0,0.35)",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  padding: 12,
+                  borderRadius: 14,
+                  overflowX: "auto",
+                }}
+              >
+                {error}
+              </pre>
+            )}
+
+            {showTable && rows.length > 0 && <ResultsTable previewRows={rows} />}
+
+            {csv && (
+              <div
+                style={{
+                  borderRadius: 16,
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  background: "rgba(0,0,0,0.22)",
+                  padding: 14,
+                  display: "grid",
+                  gap: 10,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                  <div style={{ fontWeight: 900 }}>CSV Union Output</div>
+                  <a
+                    href={"data:text/csv;charset=utf-8," + encodeURIComponent(csv)}
+                    download="albixximo_union.csv"
+                    style={{
+                      color: "white",
+                      textDecoration: "none",
+                      padding: "8px 12px",
+                      borderRadius: 12,
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      background: "rgba(255,255,255,0.06)",
+                      fontSize: 13,
+                    }}
+                  >
+                    Scarica CSV
+                  </a>
+                </div>
+
+                <textarea
+                  value={csv}
+                  readOnly
+                  rows={14}
+                  style={{
+                    width: "100%",
+                    borderRadius: 14,
+                    border: "1px solid rgba(255,255,255,0.10)",
+                    background: "rgba(0,0,0,0.35)",
+                    color: "white",
+                    padding: 12,
+                    fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                    fontSize: 12,
+                  }}
+                />
+              </div>
+            )}
+
+            <div
+              style={{
+                borderRadius: 14,
+                border: "1px solid rgba(255,255,255,0.10)",
+                background: "rgba(0,0,0,0.18)",
+                padding: "10px 12px",
+              }}
+            >
+              <LegendBare />
+            </div>
           </div>
         </div>
       </div>
-    </div>
 
-    <div
-      style={{
-        position: "fixed",
-        left: "-20000px",
-        top: 0,
-        width: 1320,
-        pointerEvents: "none",
-        zIndex: -1,
-        opacity: 1,
-      }}
-    >
-      <div ref={exportRef}>
-        {rows.length > 0 && (
-          <div
-            style={{
-              display: "grid",
-              gap: 16,
-              padding: 20,
-              borderRadius: 22,
-              background:
-                "radial-gradient(1200px 600px at 15% 10%, rgba(255,215,0,0.14), transparent 50%)," +
-                "radial-gradient(900px 500px at 85% 20%, rgba(160,90,255,0.16), transparent 50%)," +
-                "linear-gradient(180deg, #0b0d12 0%, #07080c 100%)",
-              border: "1px solid rgba(255,255,255,0.10)",
-              boxShadow: "0 14px 60px rgba(0,0,0,0.45)",
-            }}
-          >
-            <AppHeader />
-            <ResultsTable previewRows={rows} exporting={true} />
-          </div>
-        )}
+      <div
+        style={{
+          position: "fixed",
+          left: "-20000px",
+          top: 0,
+          width: 1320,
+          pointerEvents: "none",
+          zIndex: -1,
+          opacity: 1,
+        }}
+      >
+        <div ref={exportRef}>
+          {rows.length > 0 && (
+            <div
+              style={{
+                display: "grid",
+                gap: 16,
+                padding: 20,
+                borderRadius: 22,
+                background:
+                  "radial-gradient(1200px 600px at 15% 10%, rgba(255,215,0,0.14), transparent 50%)," +
+                  "radial-gradient(900px 500px at 85% 20%, rgba(160,90,255,0.16), transparent 50%)," +
+                  "linear-gradient(180deg, #0b0d12 0%, #07080c 100%)",
+                border: "1px solid rgba(255,255,255,0.10)",
+                boxShadow: "0 14px 60px rgba(0,0,0,0.45)",
+              }}
+            >
+              <AppHeader />
+              <ResultsTable previewRows={rows} exporting={true} />
+            </div>
+          )}
+        </div>
       </div>
     </div>
-  </div>
-)
+  )
 }
