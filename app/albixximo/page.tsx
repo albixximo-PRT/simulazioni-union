@@ -667,52 +667,56 @@ export default function Page() {
         overflow: "hidden",
       }}
     >
+      {/* glow dietro */}
       <div
         style={{
           position: "absolute",
           inset: 0,
           pointerEvents: "none",
           background:
-            "radial-gradient(circle at center, rgba(40,80,255,0.16) 0%, rgba(40,80,255,0.08) 18%, rgba(160,90,255,0.10) 36%, rgba(255,215,0,0.06) 52%, transparent 72%)",
-          filter: "blur(28px)",
-          transform: "scale(1.2)",
+            "radial-gradient(circle at center, rgba(40,80,255,0.18) 0%, rgba(160,90,255,0.14) 30%, rgba(255,215,0,0.08) 55%, transparent 75%)",
+          filter: "blur(30px)",
         }}
       />
 
+      {/* BOX LOGIN */}
       <div
         style={{
           width: "100%",
-          maxWidth: 470,
-          borderRadius: 24,
-          padding: "34px 30px",
+          maxWidth: 560, // 🔥 PIÙ GRANDE
+          borderRadius: 26,
+          padding: "40px 36px",
           background: "rgba(14, 18, 32, 0.88)",
           border: "1px solid rgba(163, 95, 255, 0.34)",
           boxShadow:
-            "0 0 40px rgba(120,70,255,0.18), 0 0 120px rgba(255,215,0,0.06)",
-          backdropFilter: "blur(12px)",
+            "0 0 60px rgba(120,70,255,0.20), 0 0 140px rgba(255,215,0,0.08)",
+          backdropFilter: "blur(14px)",
           position: "relative",
           zIndex: 1,
         }}
       >
-        <div style={{ textAlign: "center", marginBottom: 26 }}>
+        <div style={{ textAlign: "center", marginBottom: 30 }}>
+          
+          {/* LOGO GRANDE */}
           <img
             src="/union_logo.png"
             alt="Union"
             style={{
-              width: 132,
+              width: 170, // 🔥 LOGO GRANDE
               height: "auto",
-              marginBottom: 14,
+              marginBottom: 18,
               filter:
-                "drop-shadow(0 0 18px rgba(255,255,255,0.10)) drop-shadow(0 0 26px rgba(160,90,255,0.22))",
+                "drop-shadow(0 0 25px rgba(255,255,255,0.15)) drop-shadow(0 0 40px rgba(160,90,255,0.25))",
             }}
           />
 
+          {/* BADGE */}
           <div
             style={{
               display: "inline-flex",
               alignItems: "center",
               justifyContent: "center",
-              padding: "6px 12px",
+              padding: "6px 14px",
               borderRadius: 999,
               fontSize: 12,
               fontWeight: 800,
@@ -727,34 +731,34 @@ export default function Page() {
             Accesso riservato
           </div>
 
+          {/* TITOLO */}
           <h1
             style={{
               margin: 0,
-              fontSize: 32,
+              fontSize: 34,
               fontWeight: 900,
-              lineHeight: 1.05,
-              color: "#ffffff",
               letterSpacing: "-0.03em",
               textTransform: "uppercase",
-              textShadow: "0 0 18px rgba(255,215,0,0.18)",
+              textShadow: "0 0 20px rgba(255,215,0,0.18)",
             }}
           >
-            Union Simulazioni
+            UNION RACE TIMING
           </h1>
 
+          {/* SOTTOTITOLO */}
           <p
             style={{
-              margin: "12px 0 0 0",
+              margin: "14px 0 0 0",
               fontSize: 14,
-              lineHeight: 1.6,
-              color: "rgba(255,255,255,0.76)",
+              color: "rgba(255,255,255,0.75)",
             }}
           >
-            Inserisci la password per accedere ad Albixximo Union Tools.
+            Inserisci password per accedere
           </p>
         </div>
 
-        <div style={{ display: "grid", gap: 12 }}>
+        {/* INPUT + BUTTON */}
+        <div style={{ display: "grid", gap: 14 }}>
           <input
             type="password"
             value={inputPassword}
@@ -766,19 +770,18 @@ export default function Page() {
             autoFocus
             style={{
               width: "100%",
-              height: 54,
+              height: 56,
               borderRadius: 14,
-              border: "1px solid rgba(255,215,0,0.24)",
+              border: "1px solid rgba(255,215,0,0.28)",
               background: "rgba(255,255,255,0.04)",
               color: "#ffffff",
               padding: "0 16px",
               fontSize: 15,
               outline: "none",
-              boxSizing: "border-box",
             }}
           />
 
-          {loginError ? (
+          {loginError && (
             <div
               style={{
                 fontSize: 13,
@@ -791,14 +794,14 @@ export default function Page() {
             >
               {loginError}
             </div>
-          ) : null}
+          )}
 
           <button
             onClick={handleLogin}
             disabled={!inputPassword.trim()}
             style={{
               width: "100%",
-              height: 54,
+              height: 56,
               borderRadius: 14,
               border: "1px solid rgba(255,215,0,0.35)",
               background: !inputPassword.trim()
@@ -808,10 +811,7 @@ export default function Page() {
               fontSize: 15,
               fontWeight: 900,
               cursor: !inputPassword.trim() ? "not-allowed" : "pointer",
-              boxShadow: !inputPassword.trim()
-                ? "none"
-                : "0 10px 30px rgba(255,215,0,0.18)",
-              transition: "all 0.2s ease",
+              boxShadow: "0 12px 30px rgba(255,215,0,0.18)",
               textTransform: "uppercase",
               letterSpacing: 0.6,
             }}
@@ -820,15 +820,16 @@ export default function Page() {
           </button>
         </div>
 
+        {/* FOOTER */}
         <div
           style={{
             marginTop: 18,
             textAlign: "center",
-            fontSize: 12,
+            fontSize: 11, // 🔥 PIÙ PICCOLO
             color: "rgba(255,255,255,0.45)",
           }}
         >
-          Area protetta • Union
+          Albixximo Time Assistant
         </div>
       </div>
     </div>
