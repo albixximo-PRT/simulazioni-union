@@ -667,7 +667,6 @@ export default function Page() {
         overflow: "hidden",
       }}
     >
-      {/* glow dietro */}
       <div
         style={{
           position: "absolute",
@@ -679,13 +678,12 @@ export default function Page() {
         }}
       />
 
-      {/* BOX LOGIN */}
       <div
         style={{
           width: "100%",
-          maxWidth: 560, // 🔥 PIÙ GRANDE
-          borderRadius: 26,
-          padding: "40px 36px",
+          maxWidth: 640,
+          borderRadius: 28,
+          padding: "44px 42px",
           background: "rgba(14, 18, 32, 0.88)",
           border: "1px solid rgba(163, 95, 255, 0.34)",
           boxShadow:
@@ -695,22 +693,29 @@ export default function Page() {
           zIndex: 1,
         }}
       >
-        <div style={{ textAlign: "center", marginBottom: 30 }}>
-          
-          {/* LOGO GRANDE */}
-          <img
-            src="/union_logo.png"
-            alt="Union"
+        <div style={{ textAlign: "center", marginBottom: 32 }}>
+          <div
             style={{
-              width: 170, // 🔥 LOGO GRANDE
-              height: "auto",
-              marginBottom: 18,
-              filter:
-                "drop-shadow(0 0 25px rgba(255,255,255,0.15)) drop-shadow(0 0 40px rgba(160,90,255,0.25))",
+              width: "100%",
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "center",
+              marginBottom: 20,
             }}
-          />
+          >
+            <img
+              src="/union_logo.png"
+              alt="Union"
+              style={{
+                width: 220,
+                height: "auto",
+                display: "block",
+                filter:
+                  "drop-shadow(0 0 30px rgba(255,255,255,0.16)) drop-shadow(0 0 42px rgba(160,90,255,0.28))",
+              }}
+            />
+          </div>
 
-          {/* BADGE */}
           <div
             style={{
               display: "inline-flex",
@@ -725,31 +730,30 @@ export default function Page() {
               color: "rgba(255,215,0,0.96)",
               background: "rgba(255,215,0,0.10)",
               border: "1px solid rgba(255,215,0,0.22)",
-              marginBottom: 14,
+              marginBottom: 16,
             }}
           >
             Accesso riservato
           </div>
 
-          {/* TITOLO */}
           <h1
             style={{
               margin: 0,
-              fontSize: 34,
+              fontSize: 42,
               fontWeight: 900,
-              letterSpacing: "-0.03em",
+              letterSpacing: "-0.04em",
               textTransform: "uppercase",
               textShadow: "0 0 20px rgba(255,215,0,0.18)",
+              lineHeight: 1.02,
             }}
           >
             UNION RACE TIMING
           </h1>
 
-          {/* SOTTOTITOLO */}
           <p
             style={{
-              margin: "14px 0 0 0",
-              fontSize: 14,
+              margin: "16px 0 0 0",
+              fontSize: 15,
               color: "rgba(255,255,255,0.75)",
             }}
           >
@@ -757,7 +761,6 @@ export default function Page() {
           </p>
         </div>
 
-        {/* INPUT + BUTTON */}
         <div style={{ display: "grid", gap: 14 }}>
           <input
             type="password"
@@ -770,14 +773,15 @@ export default function Page() {
             autoFocus
             style={{
               width: "100%",
-              height: 56,
-              borderRadius: 14,
+              height: 60,
+              borderRadius: 16,
               border: "1px solid rgba(255,215,0,0.28)",
               background: "rgba(255,255,255,0.04)",
               color: "#ffffff",
-              padding: "0 16px",
-              fontSize: 15,
+              padding: "0 18px",
+              fontSize: 16,
               outline: "none",
+              boxSizing: "border-box",
             }}
           />
 
@@ -801,14 +805,14 @@ export default function Page() {
             disabled={!inputPassword.trim()}
             style={{
               width: "100%",
-              height: 56,
-              borderRadius: 14,
+              height: 60,
+              borderRadius: 16,
               border: "1px solid rgba(255,215,0,0.35)",
               background: !inputPassword.trim()
                 ? "rgba(255,255,255,0.08)"
                 : "linear-gradient(135deg, rgba(255,215,0,0.96), rgba(255,190,40,0.94))",
               color: "#111522",
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: 900,
               cursor: !inputPassword.trim() ? "not-allowed" : "pointer",
               boxShadow: "0 12px 30px rgba(255,215,0,0.18)",
@@ -820,13 +824,13 @@ export default function Page() {
           </button>
         </div>
 
-        {/* FOOTER */}
         <div
           style={{
-            marginTop: 18,
+            marginTop: 20,
             textAlign: "center",
-            fontSize: 11, // 🔥 PIÙ PICCOLO
+            fontSize: 10,
             color: "rgba(255,255,255,0.45)",
+            letterSpacing: 0.3,
           }}
         >
           Albixximo Time Assistant
