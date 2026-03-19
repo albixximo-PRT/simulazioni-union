@@ -672,39 +672,41 @@ export default function Page() {
           position: "absolute",
           inset: 0,
           pointerEvents: "none",
-          background: "url('/union_logo.png') center / min(92vw, 980px) no-repeat",
-          opacity: 0.14,
-          filter:
-            "drop-shadow(0 0 120px rgba(160,90,255,0.55)) drop-shadow(0 0 80px rgba(255,215,0,0.30))",
-          transform: "scale(1.02)",
-        }}
-      />
-
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
           background:
-            "radial-gradient(circle at center, rgba(10,12,18,0.18) 0%, rgba(10,12,18,0.38) 38%, rgba(7,8,12,0.78) 72%, rgba(7,8,12,0.92) 100%)",
+            "radial-gradient(circle at center, rgba(40,80,255,0.16) 0%, rgba(40,80,255,0.08) 18%, rgba(160,90,255,0.10) 36%, rgba(255,215,0,0.06) 52%, transparent 72%)",
+          filter: "blur(28px)",
+          transform: "scale(1.2)",
         }}
       />
 
       <div
         style={{
           width: "100%",
-          maxWidth: 460,
+          maxWidth: 470,
           borderRadius: 24,
           padding: "34px 30px",
-          background: "rgba(14, 18, 32, 0.82)",
+          background: "rgba(14, 18, 32, 0.88)",
           border: "1px solid rgba(163, 95, 255, 0.34)",
-          boxShadow: "0 0 40px rgba(120,70,255,0.18), 0 0 120px rgba(255,215,0,0.06)",
+          boxShadow:
+            "0 0 40px rgba(120,70,255,0.18), 0 0 120px rgba(255,215,0,0.06)",
           backdropFilter: "blur(12px)",
           position: "relative",
           zIndex: 1,
         }}
       >
         <div style={{ textAlign: "center", marginBottom: 26 }}>
+          <img
+            src="/union_logo.png"
+            alt="Union"
+            style={{
+              width: 132,
+              height: "auto",
+              marginBottom: 14,
+              filter:
+                "drop-shadow(0 0 18px rgba(255,255,255,0.10)) drop-shadow(0 0 26px rgba(160,90,255,0.22))",
+            }}
+          />
+
           <div
             style={{
               display: "inline-flex",
@@ -806,7 +808,9 @@ export default function Page() {
               fontSize: 15,
               fontWeight: 900,
               cursor: !inputPassword.trim() ? "not-allowed" : "pointer",
-              boxShadow: !inputPassword.trim() ? "none" : "0 10px 30px rgba(255,215,0,0.18)",
+              boxShadow: !inputPassword.trim()
+                ? "none"
+                : "0 10px 30px rgba(255,215,0,0.18)",
               transition: "all 0.2s ease",
               textTransform: "uppercase",
               letterSpacing: 0.6,
