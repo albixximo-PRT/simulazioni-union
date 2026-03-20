@@ -1164,7 +1164,7 @@ export default function Page() {
                   borderRadius: 14,
                 }}
               >
-                {warning}
+                ⚠️ Controlla gli screen caricati: alcuni dati potrebbero non essere corretti.
               </div>
             )}
 
