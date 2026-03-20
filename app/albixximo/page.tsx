@@ -5,7 +5,7 @@ import { toPng } from "html-to-image"
 
 const APP_PASSWORD = "Gabus"
 const AUTH_STORAGE_KEY = "albixximo_union_authorized"
-const EXPORT_TEXTS_STORAGE_KEY = "albixximo_union_export_texts"
+const EXPORT_TEXTS_STORAGE_KEY = "albixximo_union_export_texts_session"
 
 type UnionRow = {
   posizione: number
@@ -29,6 +29,12 @@ type ExportTexts = {
   mainTitle: string
   sideLabel: string
   subtitle: string
+}
+
+const DEFAULT_EXPORT_TEXTS: ExportTexts = {
+  mainTitle: "ALBIXXIMO UNION TOOLS",
+  sideLabel: "UNION CSV EXTRACTOR",
+  subtitle: "PRT Timing Assistant",
 }
 
 function TableCell({
@@ -332,12 +338,10 @@ function LegendBare() {
 }
 
 function AppHeader({
-  onLogout,
   mainTitle = "Albixximo Union Tools",
   sideLabel = "Union CSV Extractor",
   subtitle = "PRT Timing Assistant",
 }: {
-  onLogout?: () => void
   mainTitle?: string
   sideLabel?: string
   subtitle?: string
@@ -432,78 +436,46 @@ function AppHeader({
         />
       </div>
 
-      <div
+      <a
+        href="/prt_logo.png"
+        target="_blank"
+        rel="noreferrer"
+        title="PRT Logo"
         style={{
           position: "relative",
-          display: "flex",
-          alignItems: "center",
-          gap: 12,
-          flexWrap: "wrap",
-          justifyContent: "flex-end",
+          display: "grid",
+          placeItems: "center",
+          padding: 8,
+          borderRadius: 18,
+          border: "1px solid rgba(255,255,255,0.12)",
+          background: "rgba(0,0,0,0.18)",
+          textDecoration: "none",
+          flexShrink: 0,
         }}
       >
-        {onLogout ? (
-          <button
-            onClick={onLogout}
-            style={{
-              padding: "10px 14px",
-              borderRadius: 14,
-              border: "1px solid rgba(255,255,255,0.14)",
-              background: "rgba(255,255,255,0.06)",
-              color: "white",
-              cursor: "pointer",
-              fontWeight: 900,
-              letterSpacing: 0.5,
-              textTransform: "uppercase",
-              fontSize: 12,
-            }}
-            title="Esci e richiedi di nuovo la password"
-          >
-            Logout
-          </button>
-        ) : null}
-
-        <a
-          href="/prt_logo.png"
-          target="_blank"
-          rel="noreferrer"
-          title="PRT Logo"
+        <div
           style={{
-            position: "relative",
-            display: "grid",
-            placeItems: "center",
-            padding: 8,
-            borderRadius: 18,
-            border: "1px solid rgba(255,255,255,0.12)",
-            background: "rgba(0,0,0,0.18)",
-            textDecoration: "none",
-            flexShrink: 0,
+            position: "absolute",
+            inset: -6,
+            borderRadius: 22,
+            background: "radial-gradient(circle at 50% 40%, rgba(255,215,0,0.35), transparent 60%)",
+            filter: "blur(10px)",
+            opacity: 0.95,
+            pointerEvents: "none",
           }}
-        >
-          <div
-            style={{
-              position: "absolute",
-              inset: -6,
-              borderRadius: 22,
-              background: "radial-gradient(circle at 50% 40%, rgba(255,215,0,0.35), transparent 60%)",
-              filter: "blur(10px)",
-              opacity: 0.95,
-              pointerEvents: "none",
-            }}
-          />
-          <img
-            src="/prt_logo.png"
-            alt="PRT"
-            style={{
-              height: 56,
-              width: "auto",
-              opacity: 0.95,
-              filter:
-                "drop-shadow(0 0 14px rgba(255,215,0,0.45)) drop-shadow(0 0 34px rgba(255,215,0,0.18))",
-            }}
-          />
-        </a>
-      </div>
+        />
+        <img
+          src="/prt_logo.png"
+          alt="PRT"
+          style={{
+            height: 56,
+            width: "auto",
+            opacity: 0.95,
+            filter:
+              "drop-shadow(0 0 14px rgba(255,215,0,0.45)) drop-shadow(0 0 34px rgba(255,215,0,0.18))",
+          }}
+        />
+      </a>
     </div>
   )
 }
@@ -723,16 +695,11 @@ export default function Page() {
   const [pulse, setPulse] = useState(0)
 
   const [showExportModal, setShowExportModal] = useState(false)
-  const [exportTexts, setExportTexts] = useState<ExportTexts>({
-    mainTitle: "ALBIXXIMO UNION TOOLS",
-    sideLabel: "UNION CSV EXTRACTOR",
-    subtitle: "PRT Timing Assistant",
-  })
-  const [exportTextsDraft, setExportTextsDraft] = useState<ExportTexts>({
-    mainTitle: "ALBIXXIMO UNION TOOLS",
-    sideLabel: "UNION CSV EXTRACTOR",
-    subtitle: "PRT Timing Assistant",
-  })
+  const [exportTexts, setExportTexts] = useState<ExportTexts>(DEFAULT_EXPORT_TEXTS)
+  const [exportTextsDraft, setExportTextsDraft] = useState<ExportTexts>(DEFAULT_EXPORT_TEXTS)
+
+  const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const exportRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
     const savedAuth = sessionStorage.getItem(AUTH_STORAGE_KEY)
@@ -740,24 +707,29 @@ export default function Page() {
       setAuthorized(true)
     }
 
-    const savedExportTexts = localStorage.getItem(EXPORT_TEXTS_STORAGE_KEY)
+    const savedExportTexts = sessionStorage.getItem(EXPORT_TEXTS_STORAGE_KEY)
     if (savedExportTexts) {
       try {
         const parsed = JSON.parse(savedExportTexts)
         const nextTexts: ExportTexts = {
-          mainTitle: parsed?.mainTitle || "ALBIXXIMO UNION TOOLS",
-          sideLabel: parsed?.sideLabel || "UNION CSV EXTRACTOR",
-          subtitle: parsed?.subtitle || "PRT Timing Assistant",
+          mainTitle: parsed?.mainTitle || DEFAULT_EXPORT_TEXTS.mainTitle,
+          sideLabel: parsed?.sideLabel || DEFAULT_EXPORT_TEXTS.sideLabel,
+          subtitle: parsed?.subtitle || DEFAULT_EXPORT_TEXTS.subtitle,
         }
         setExportTexts(nextTexts)
         setExportTextsDraft(nextTexts)
-      } catch {}
+      } catch {
+        setExportTexts(DEFAULT_EXPORT_TEXTS)
+        setExportTextsDraft(DEFAULT_EXPORT_TEXTS)
+      }
     }
   }, [])
 
   useEffect(() => {
-    localStorage.setItem(EXPORT_TEXTS_STORAGE_KEY, JSON.stringify(exportTexts))
-  }, [exportTexts])
+    if (authorized) {
+      sessionStorage.setItem(EXPORT_TEXTS_STORAGE_KEY, JSON.stringify(exportTexts))
+    }
+  }, [exportTexts, authorized])
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -789,9 +761,6 @@ export default function Page() {
     }
   }, [])
 
-  const fileInputRef = useRef<HTMLInputElement | null>(null)
-  const exportRef = useRef<HTMLDivElement | null>(null)
-
   const canRun = useMemo(() => files.length > 0, [files])
 
   const ppPilot = useMemo(() => {
@@ -817,6 +786,8 @@ export default function Page() {
 
   function handleLogout() {
     sessionStorage.removeItem(AUTH_STORAGE_KEY)
+    sessionStorage.removeItem(EXPORT_TEXTS_STORAGE_KEY)
+
     setAuthorized(false)
     setFiles([])
     setCsv("")
@@ -831,6 +802,9 @@ export default function Page() {
     setShowExportModal(false)
     setInputPassword("")
     setLoginError("")
+    setExportTexts(DEFAULT_EXPORT_TEXTS)
+    setExportTextsDraft(DEFAULT_EXPORT_TEXTS)
+
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
@@ -875,9 +849,9 @@ export default function Page() {
 
   async function confirmExportPng() {
     const nextTexts = {
-      mainTitle: (exportTextsDraft.mainTitle || "ALBIXXIMO UNION TOOLS").trim(),
-      sideLabel: (exportTextsDraft.sideLabel || "UNION CSV EXTRACTOR").trim(),
-      subtitle: (exportTextsDraft.subtitle || "PRT Timing Assistant").trim(),
+      mainTitle: (exportTextsDraft.mainTitle || DEFAULT_EXPORT_TEXTS.mainTitle).trim(),
+      sideLabel: (exportTextsDraft.sideLabel || DEFAULT_EXPORT_TEXTS.sideLabel).trim(),
+      subtitle: (exportTextsDraft.subtitle || DEFAULT_EXPORT_TEXTS.subtitle).trim(),
     }
 
     setExportTexts(nextTexts)
@@ -1152,7 +1126,7 @@ export default function Page() {
       }}
     >
       <div style={{ maxWidth: 1320, margin: "0 auto" }}>
-        <AppHeader onLogout={handleLogout} />
+        <AppHeader />
 
         <div
           style={{
@@ -1320,6 +1294,25 @@ export default function Page() {
                 }}
               >
                 Reset
+              </button>
+
+              <button
+                onClick={handleLogout}
+                style={{
+                  padding: "12px 14px",
+                  borderRadius: 14,
+                  border: "1px solid rgba(255,80,80,0.35)",
+                  background: "rgba(255,80,80,0.18)",
+                  color: "white",
+                  cursor: "pointer",
+                  textTransform: "uppercase",
+                  fontWeight: 900,
+                  letterSpacing: 0.4,
+                  fontSize: 12,
+                  boxShadow: "0 0 18px rgba(255,80,80,0.12)",
+                }}
+              >
+                Logout
               </button>
 
               {!canRun && <div style={{ fontSize: 12, opacity: 0.75 }}>Seleziona almeno 2 immagini (Quali + Gara).</div>}
