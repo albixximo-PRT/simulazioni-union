@@ -692,7 +692,7 @@ useEffect(() => {
     width: "100%",
     maxWidth: 680,
     borderRadius: 28,
-    padding: "48px 32px",
+    padding: "34px 28px",
     background: "rgba(14, 18, 32, 0.88)",
     border: "1px solid rgba(163, 95, 255, 0.34)",
     boxShadow:
@@ -707,21 +707,21 @@ useEffect(() => {
   style={{
     display: "flex",
     justifyContent: "center",
-    marginBottom: 34,
+    marginBottom: 18,
   }}
 >
   <img
     src="/union_logo.png"
     alt="Union"
     style={{
-      width: 560,
-      maxWidth: "95%",
+      width: 360,
+      maxWidth: "82%",
       height: "auto",
       transition: "transform 1.8s ease, filter 1.8s ease",
-      transform: pulse ? "scale(1.015)" : "scale(1)",
+      transform: pulse ? "scale(1.01)" : "scale(1)",
       filter: pulse
-        ? "drop-shadow(0 0 8px rgba(255,215,0,0.28)) drop-shadow(0 0 18px rgba(255,215,0,0.16)) drop-shadow(0 0 22px rgba(160,90,255,0.14))"
-        : "drop-shadow(0 0 3px rgba(255,215,0,0.12)) drop-shadow(0 0 10px rgba(160,90,255,0.12))",
+        ? "drop-shadow(0 0 6px rgba(255,215,0,0.22)) drop-shadow(0 0 14px rgba(255,215,0,0.12)) drop-shadow(0 0 18px rgba(160,90,255,0.12))"
+        : "drop-shadow(0 0 2px rgba(255,215,0,0.10)) drop-shadow(0 0 8px rgba(160,90,255,0.10))",
     }}
   />
 </div>
@@ -749,7 +749,7 @@ useEffect(() => {
           <h1
             style={{
               margin: 0,
-              fontSize: 52,
+              fontSize: 44,
               fontWeight: 900,
               letterSpacing: "-0.04em",
               textTransform: "uppercase",
