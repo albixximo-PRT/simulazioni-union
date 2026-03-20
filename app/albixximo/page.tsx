@@ -1035,7 +1035,7 @@ export default function Page() {
                   textTransform: "uppercase",
                 }}
               >
-                {loading ? "Elaborazione..." : "Genera CSV Union"}
+                {loading ? "Elaborazione..." : "Genera Tabella e CSV Union"}
               </button>
 
               <button
@@ -1104,7 +1104,7 @@ export default function Page() {
                         "linear-gradient(90deg, rgba(255,215,0,0.95), rgba(220,220,220,0.95), rgba(160,90,255,0.95))",
                       boxShadow:
                         "0 0 18px rgba(255,215,0,0.25), 0 0 22px rgba(160,90,255,0.18)",
-                      animation: "unionLoadSlide 1.8s ease-in-out infinite",
+                      animation: "unionLoadSlide 2.8s ease-in-out infinite",
                     }}
                   />
 
@@ -1119,7 +1119,7 @@ export default function Page() {
                       background:
                         "linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.42), rgba(255,255,255,0))",
                       filter: "blur(2px)",
-                      animation: "unionLoadShine 1.8s ease-in-out infinite",
+                      animation: "unionLoadShine 2.8s ease-in-out infinite",
                     }}
                   />
                 </div>
