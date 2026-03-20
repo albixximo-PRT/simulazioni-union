@@ -558,13 +558,35 @@ export default function Page() {
   const [loginError, setLoginError] = useState("")
   const [pulse, setPulse] = useState(0)
 
-useEffect(() => {
-  const id = setInterval(() => {
-    setPulse((p) => (p === 0 ? 1 : 0))
-  }, 2200)
+  useEffect(() => {
+    const id = setInterval(() => {
+      setPulse((p) => (p === 0 ? 1 : 0))
+    }, 2200)
 
-  return () => clearInterval(id)
-}, [])
+    return () => clearInterval(id)
+  }, [])
+
+  useEffect(() => {
+    const style = document.createElement("style")
+    style.innerHTML = `
+      @keyframes unionLoadSlide {
+        0% { left: -35%; }
+        50% { left: 100%; }
+        100% { left: -35%; }
+      }
+
+      @keyframes unionLoadShine {
+        0% { left: -20%; }
+        50% { left: 100%; }
+        100% { left: -20%; }
+      }
+    `
+    document.head.appendChild(style)
+
+    return () => {
+      document.head.removeChild(style)
+    }
+  }, [])
 
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const exportRef = useRef<HTMLDivElement | null>(null)
@@ -658,6 +680,198 @@ useEffect(() => {
   }
 
   if (!authorized) {
+    return (
+      <div
+        style={{
+          position: "relative",
+          minHeight: "100vh",
+          padding: 24,
+          color: "white",
+          fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial",
+          background:
+            "radial-gradient(1200px 600px at 15% 10%, rgba(255,215,0,0.14), transparent 50%)," +
+            "radial-gradient(900px 500px at 85% 20%, rgba(160,90,255,0.16), transparent 50%)," +
+            "linear-gradient(180deg, #0b0d12 0%, #07080c 100%)",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+        }}
+      >
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            pointerEvents: "none",
+            background:
+              "radial-gradient(circle at center, rgba(40,80,255,0.18) 0%, rgba(160,90,255,0.14) 30%, rgba(255,215,0,0.08) 55%, transparent 75%)",
+            filter: "blur(30px)",
+          }}
+        />
+
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 680,
+            borderRadius: 28,
+            padding: "34px 28px",
+            background: "rgba(14, 18, 32, 0.88)",
+            border: "1px solid rgba(163, 95, 255, 0.34)",
+            boxShadow:
+              "0 0 60px rgba(120,70,255,0.20), 0 0 140px rgba(255,215,0,0.08)",
+            backdropFilter: "blur(14px)",
+            position: "relative",
+            zIndex: 1,
+          }}
+        >
+          <div style={{ textAlign: "center", marginBottom: 34 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "center",
+                marginBottom: 18,
+              }}
+            >
+              <img
+                src="/union_logo.png"
+                alt="Union"
+                style={{
+                  width: 360,
+                  maxWidth: "82%",
+                  height: "auto",
+                  transition: "transform 1.8s ease, filter 1.8s ease",
+                  transform: pulse ? "scale(1.01)" : "scale(1)",
+                  filter: pulse
+                    ? "drop-shadow(0 0 6px rgba(255,215,0,0.22)) drop-shadow(0 0 14px rgba(255,215,0,0.12)) drop-shadow(0 0 18px rgba(160,90,255,0.12))"
+                    : "drop-shadow(0 0 2px rgba(255,215,0,0.10)) drop-shadow(0 0 8px rgba(160,90,255,0.10))",
+                }}
+              />
+            </div>
+
+            <div
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                justifyContent: "center",
+                padding: "6px 14px",
+                borderRadius: 999,
+                fontSize: 12,
+                fontWeight: 800,
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "rgba(255,215,0,0.96)",
+                background: "rgba(255,215,0,0.10)",
+                border: "1px solid rgba(255,215,0,0.22)",
+                marginBottom: 18,
+              }}
+            >
+              Accesso riservato
+            </div>
+
+            <h1
+              style={{
+                margin: 0,
+                fontSize: 44,
+                fontWeight: 900,
+                letterSpacing: "-0.04em",
+                textTransform: "uppercase",
+                textShadow: "0 0 22px rgba(255,215,0,0.18)",
+                lineHeight: 1.02,
+              }}
+            >
+              UNION RACE TIMING
+            </h1>
+
+            <p
+              style={{
+                margin: "18px 0 0 0",
+                fontSize: 16,
+                color: "rgba(255,255,255,0.75)",
+              }}
+            >
+              Inserisci password per accedere
+            </p>
+          </div>
+
+          <div style={{ display: "grid", gap: 16 }}>
+            <input
+              type="password"
+              value={inputPassword}
+              onChange={(e) => setInputPassword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleLogin()
+              }}
+              placeholder="Inserisci password"
+              autoFocus
+              style={{
+                width: "100%",
+                height: 64,
+                borderRadius: 16,
+                border: "1px solid rgba(255,215,0,0.28)",
+                background: "rgba(255,255,255,0.04)",
+                color: "#ffffff",
+                padding: "0 20px",
+                fontSize: 17,
+                outline: "none",
+                boxSizing: "border-box",
+              }}
+            />
+
+            {loginError && (
+              <div
+                style={{
+                  fontSize: 13,
+                  color: "#ff9c9c",
+                  background: "rgba(255,80,80,0.08)",
+                  border: "1px solid rgba(255,80,80,0.22)",
+                  borderRadius: 12,
+                  padding: "10px 12px",
+                }}
+              >
+                {loginError}
+              </div>
+            )}
+
+            <button
+              onClick={handleLogin}
+              disabled={!inputPassword.trim()}
+              style={{
+                width: "100%",
+                height: 64,
+                borderRadius: 16,
+                border: "1px solid rgba(255,215,0,0.35)",
+                background: !inputPassword.trim()
+                  ? "rgba(255,255,255,0.08)"
+                  : "linear-gradient(135deg, rgba(255,215,0,0.96), rgba(255,190,40,0.94))",
+                color: "#111522",
+                fontSize: 17,
+                fontWeight: 900,
+                cursor: !inputPassword.trim() ? "not-allowed" : "pointer",
+                boxShadow: "0 12px 30px rgba(255,215,0,0.18)",
+                textTransform: "uppercase",
+                letterSpacing: 0.6,
+              }}
+            >
+              Accedi
+            </button>
+          </div>
+
+          <div
+            style={{
+              marginTop: 22,
+              textAlign: "center",
+              fontSize: 10,
+              color: "rgba(255,255,255,0.45)",
+              letterSpacing: 0.3,
+            }}
+          >
+            Albixximo Time Assistant
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div
       style={{
@@ -670,200 +884,8 @@ useEffect(() => {
           "radial-gradient(1200px 600px at 15% 10%, rgba(255,215,0,0.14), transparent 50%)," +
           "radial-gradient(900px 500px at 85% 20%, rgba(160,90,255,0.16), transparent 50%)," +
           "linear-gradient(180deg, #0b0d12 0%, #07080c 100%)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        overflow: "hidden",
       }}
     >
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          pointerEvents: "none",
-          background:
-            "radial-gradient(circle at center, rgba(40,80,255,0.18) 0%, rgba(160,90,255,0.14) 30%, rgba(255,215,0,0.08) 55%, transparent 75%)",
-          filter: "blur(30px)",
-        }}
-      />
-
-      <div
-  style={{
-    width: "100%",
-    maxWidth: 680,
-    borderRadius: 28,
-    padding: "34px 28px",
-    background: "rgba(14, 18, 32, 0.88)",
-    border: "1px solid rgba(163, 95, 255, 0.34)",
-    boxShadow:
-      "0 0 60px rgba(120,70,255,0.20), 0 0 140px rgba(255,215,0,0.08)",
-    backdropFilter: "blur(14px)",
-    position: "relative",
-    zIndex: 1,
-  }}
->
-        <div style={{ textAlign: "center", marginBottom: 34 }}>
-          <div
-  style={{
-    display: "flex",
-    justifyContent: "center",
-    marginBottom: 18,
-  }}
->
-  <img
-    src="/union_logo.png"
-    alt="Union"
-    style={{
-      width: 360,
-      maxWidth: "82%",
-      height: "auto",
-      transition: "transform 1.8s ease, filter 1.8s ease",
-      transform: pulse ? "scale(1.01)" : "scale(1)",
-      filter: pulse
-        ? "drop-shadow(0 0 6px rgba(255,215,0,0.22)) drop-shadow(0 0 14px rgba(255,215,0,0.12)) drop-shadow(0 0 18px rgba(160,90,255,0.12))"
-        : "drop-shadow(0 0 2px rgba(255,215,0,0.10)) drop-shadow(0 0 8px rgba(160,90,255,0.10))",
-    }}
-  />
-</div>
-
-          <div
-            style={{
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              padding: "6px 14px",
-              borderRadius: 999,
-              fontSize: 12,
-              fontWeight: 800,
-              letterSpacing: "0.08em",
-              textTransform: "uppercase",
-              color: "rgba(255,215,0,0.96)",
-              background: "rgba(255,215,0,0.10)",
-              border: "1px solid rgba(255,215,0,0.22)",
-              marginBottom: 18,
-            }}
-          >
-            Accesso riservato
-          </div>
-
-          <h1
-            style={{
-              margin: 0,
-              fontSize: 44,
-              fontWeight: 900,
-              letterSpacing: "-0.04em",
-              textTransform: "uppercase",
-              textShadow: "0 0 22px rgba(255,215,0,0.18)",
-              lineHeight: 1.02,
-            }}
-          >
-            UNION RACE TIMING
-          </h1>
-
-          <p
-            style={{
-              margin: "18px 0 0 0",
-              fontSize: 16,
-              color: "rgba(255,255,255,0.75)",
-            }}
-          >
-            Inserisci password per accedere
-          </p>
-        </div>
-
-        <div style={{ display: "grid", gap: 16 }}>
-          <input
-            type="password"
-            value={inputPassword}
-            onChange={(e) => setInputPassword(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleLogin()
-            }}
-            placeholder="Inserisci password"
-            autoFocus
-            style={{
-              width: "100%",
-              height: 64,
-              borderRadius: 16,
-              border: "1px solid rgba(255,215,0,0.28)",
-              background: "rgba(255,255,255,0.04)",
-              color: "#ffffff",
-              padding: "0 20px",
-              fontSize: 17,
-              outline: "none",
-              boxSizing: "border-box",
-            }}
-          />
-
-          {loginError && (
-            <div
-              style={{
-                fontSize: 13,
-                color: "#ff9c9c",
-                background: "rgba(255,80,80,0.08)",
-                border: "1px solid rgba(255,80,80,0.22)",
-                borderRadius: 12,
-                padding: "10px 12px",
-              }}
-            >
-              {loginError}
-            </div>
-          )}
-
-          <button
-            onClick={handleLogin}
-            disabled={!inputPassword.trim()}
-            style={{
-              width: "100%",
-              height: 64,
-              borderRadius: 16,
-              border: "1px solid rgba(255,215,0,0.35)",
-              background: !inputPassword.trim()
-                ? "rgba(255,255,255,0.08)"
-                : "linear-gradient(135deg, rgba(255,215,0,0.96), rgba(255,190,40,0.94))",
-              color: "#111522",
-              fontSize: 17,
-              fontWeight: 900,
-              cursor: !inputPassword.trim() ? "not-allowed" : "pointer",
-              boxShadow: "0 12px 30px rgba(255,215,0,0.18)",
-              textTransform: "uppercase",
-              letterSpacing: 0.6,
-            }}
-          >
-            Accedi
-          </button>
-        </div>
-
-        <div
-          style={{
-            marginTop: 22,
-            textAlign: "center",
-            fontSize: 10,
-            color: "rgba(255,255,255,0.45)",
-            letterSpacing: 0.3,
-          }}
-        >
-          Albixximo Time Assistant
-        </div>
-      </div>
-    </div>
-  )
-}
-
-  return (
-  <div
-    style={{
-      position: "relative",
-      minHeight: "100vh",
-      padding: 24,
-      color: "white",
-      fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial",
-      background:
-        "radial-gradient(1200px 600px at 15% 10%, rgba(255,215,0,0.14), transparent 50%)," +
-        "radial-gradient(900px 500px at 85% 20%, rgba(160,90,255,0.16), transparent 50%)," +
-        "linear-gradient(180deg, #0b0d12 0%, #07080c 100%)",
-    }}
-  >
       <div style={{ maxWidth: 1320, margin: "0 auto" }}>
         <AppHeader />
 
@@ -1037,6 +1059,76 @@ useEffect(() => {
 
               {!canRun && <div style={{ fontSize: 12, opacity: 0.75 }}>Seleziona almeno 2 immagini (Quali + Gara).</div>}
             </div>
+
+            {loading && (
+              <div
+                style={{
+                  width: "100%",
+                  marginTop: -6,
+                  paddingLeft: 6,
+                  display: "grid",
+                  gap: 10,
+                }}
+              >
+                <div
+                  style={{
+                    position: "relative",
+                    height: 12,
+                    maxWidth: 420,
+                    borderRadius: 999,
+                    background: "rgba(255,255,255,0.06)",
+                    overflow: "hidden",
+                    border: "1px solid rgba(255,255,255,0.10)",
+                    boxShadow: "inset 0 0 14px rgba(0,0,0,0.25)",
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      borderRadius: 999,
+                      background:
+                        "linear-gradient(90deg, rgba(255,215,0,0.08), rgba(220,220,220,0.06), rgba(160,90,255,0.08))",
+                    }}
+                  />
+
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      bottom: 0,
+                      left: "-35%",
+                      width: "35%",
+                      borderRadius: 999,
+                      background:
+                        "linear-gradient(90deg, rgba(255,215,0,0.95), rgba(220,220,220,0.95), rgba(160,90,255,0.95))",
+                      boxShadow:
+                        "0 0 18px rgba(255,215,0,0.25), 0 0 22px rgba(160,90,255,0.18)",
+                      animation: "unionLoadSlide 1.8s ease-in-out infinite",
+                    }}
+                  />
+
+                  <div
+                    style={{
+                      position: "absolute",
+                      top: 0,
+                      bottom: 0,
+                      left: "-20%",
+                      width: "20%",
+                      borderRadius: 999,
+                      background:
+                        "linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,0.42), rgba(255,255,255,0))",
+                      filter: "blur(2px)",
+                      animation: "unionLoadShine 1.8s ease-in-out infinite",
+                    }}
+                  />
+                </div>
+
+                <div style={{ fontSize: 12, opacity: 0.75 }}>
+                  Elaborazione immagini e generazione CSV...
+                </div>
+              </div>
+            )}
 
             {rows.length > 0 && (
               <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
