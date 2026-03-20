@@ -704,27 +704,27 @@ useEffect(() => {
       >
         <div style={{ textAlign: "center", marginBottom: 34 }}>
           <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              marginBottom: 28,
-            }}
-          >
-            <img
-              src="/union_logo.png"
-              alt="Union"
-              style={{
-                width: 280,
-                maxWidth: "90%",
-                height: "auto",
-                transition: "all 0.6s ease",
-                transform: pulse ? "scale(1.04)" : "scale(1)",
-                filter: pulse
-                  ? "drop-shadow(0 0 25px rgba(255,215,0,0.9)) drop-shadow(0 0 60px rgba(255,215,0,0.6))"
-                  : "drop-shadow(0 0 10px rgba(255,215,0,0.4)) drop-shadow(0 0 25px rgba(160,90,255,0.3))",
-              }}
-            />
-          </div>
+  style={{
+    display: "flex",
+    justifyContent: "center",
+    marginBottom: 34,
+  }}
+>
+  <img
+    src="/union_logo.png"
+    alt="Union"
+    style={{
+      width: 560,
+      maxWidth: "95%",
+      height: "auto",
+      transition: "transform 1.8s ease, filter 1.8s ease",
+      transform: pulse ? "scale(1.015)" : "scale(1)",
+      filter: pulse
+        ? "drop-shadow(0 0 8px rgba(255,215,0,0.28)) drop-shadow(0 0 18px rgba(255,215,0,0.16)) drop-shadow(0 0 22px rgba(160,90,255,0.14))"
+        : "drop-shadow(0 0 3px rgba(255,215,0,0.12)) drop-shadow(0 0 10px rgba(160,90,255,0.12))",
+    }}
+  />
+</div>
 
           <div
             style={{
