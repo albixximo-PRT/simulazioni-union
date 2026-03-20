@@ -5,6 +5,7 @@ import { toPng } from "html-to-image"
 
 const APP_PASSWORD = "Gabus"
 const AUTH_STORAGE_KEY = "albixximo_union_authorized"
+const EXPORT_TEXTS_STORAGE_KEY = "albixximo_union_export_texts"
 
 type UnionRow = {
   posizione: number
@@ -24,27 +25,35 @@ type UnionMeta = {
   lega: string
 }
 
+type ExportTexts = {
+  mainTitle: string
+  sideLabel: string
+  subtitle: string
+}
+
 function TableCell({
   children,
   align,
   mono,
   dim,
   style,
+  exporting = false,
 }: {
   children: React.ReactNode
   align?: "left" | "center" | "right"
   mono?: boolean
   dim?: boolean
   style?: React.CSSProperties
+  exporting?: boolean
 }) {
   return (
     <td
       style={{
-        padding: "12px 12px",
+        padding: exporting ? "10px 13px" : "12px 12px",
         borderBottom: "1px solid rgba(255,255,255,0.08)",
         textAlign: align ?? "left",
         fontFamily: mono ? "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace" : undefined,
-        fontSize: 13,
+        fontSize: exporting ? 14 : 13,
         opacity: dim ? 0.75 : 0.95,
         verticalAlign: "middle",
         ...style,
@@ -59,10 +68,12 @@ function HeaderBadge({
   label,
   value,
   variant,
+  exporting = false,
 }: {
   label: string
   value: string
   variant: "gold" | "violet"
+  exporting?: boolean
 }) {
   const palette =
     variant === "gold"
@@ -70,23 +81,32 @@ function HeaderBadge({
       : { border: "rgba(160,90,255,0.70)", glow: "rgba(160,90,255,0.14)" }
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: exporting ? 12 : 10,
+        flexWrap: "nowrap",
+        whiteSpace: "nowrap",
+      }}
+    >
       <span
         style={{
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: "7px 11px",
+          padding: exporting ? "9px 14px" : "7px 11px",
           borderRadius: 999,
           border: `1px solid ${palette.border}`,
           background: "rgba(0,0,0,0.20)",
           boxShadow: `0 0 22px ${palette.glow}`,
           color: "white",
           fontWeight: 900,
-          fontSize: 12,
+          fontSize: exporting ? 14 : 12,
           letterSpacing: 0.6,
           textTransform: "uppercase",
           whiteSpace: "nowrap",
+          flexShrink: 0,
         }}
       >
         {label}
@@ -96,10 +116,11 @@ function HeaderBadge({
         style={{
           color: "white",
           fontWeight: 900,
-          fontSize: 14,
+          fontSize: exporting ? 16 : 14,
           fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
           letterSpacing: 0.2,
           whiteSpace: "nowrap",
+          flexShrink: 0,
         }}
       >
         {value || "-"}
@@ -112,10 +133,12 @@ function Pill({
   left,
   right,
   variant,
+  exporting = false,
 }: {
   left: string
   right?: string
   variant: "gold" | "violet" | "orange" | "teal" | "fuchsia"
+  exporting?: boolean
 }) {
   const styles: Record<typeof variant, React.CSSProperties> = {
     gold: {
@@ -150,10 +173,10 @@ function Pill({
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 10,
-        padding: "8px 12px",
+        gap: exporting ? 12 : 10,
+        padding: exporting ? "10px 16px" : "8px 12px",
         borderRadius: 14,
-        fontSize: 12,
+        fontSize: exporting ? 14 : 12,
         fontWeight: 900,
         letterSpacing: 0.6,
         textTransform: "uppercase",
@@ -171,6 +194,7 @@ function Pill({
             fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
             letterSpacing: 0.2,
             textTransform: "none",
+            fontSize: exporting ? 15 : 12,
           }}
         >
           {right}
@@ -278,16 +302,16 @@ function rowStyleForPos(pos: number, fallback: string): React.CSSProperties {
   return { background: fallback }
 }
 
-function renderDistaccoCell(value: string) {
+function renderDistaccoCell(value: string, exporting = false) {
   const t = (value || "").trim()
   const u = t.toUpperCase()
 
   if (!t || t === "-") return "-"
 
-  if (u === "DNF") return <Pill left="DNF" variant="teal" />
-  if (u === "BOX") return <Pill left="BOX" variant="fuchsia" />
-  if (u === "DOPPIATO") return <Pill left="DOPPIATO" variant="orange" />
-  if (/^\d+giro$/i.test(t)) return <Pill left="DOPPIATO" variant="orange" />
+  if (u === "DNF") return <Pill left="DNF" variant="teal" exporting={exporting} />
+  if (u === "BOX") return <Pill left="BOX" variant="fuchsia" exporting={exporting} />
+  if (u === "DOPPIATO") return <Pill left="DOPPIATO" variant="orange" exporting={exporting} />
+  if (/^\d+giro$/i.test(t)) return <Pill left="DOPPIATO" variant="orange" exporting={exporting} />
 
   return t
 }
@@ -309,8 +333,14 @@ function LegendBare() {
 
 function AppHeader({
   onLogout,
+  mainTitle = "Albixximo Union Tools",
+  sideLabel = "Union CSV Extractor",
+  subtitle = "PRT Timing Assistant",
 }: {
   onLogout?: () => void
+  mainTitle?: string
+  sideLabel?: string
+  subtitle?: string
 }) {
   return (
     <div
@@ -318,10 +348,10 @@ function AppHeader({
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
-        gap: 18,
+        gap: 16,
         flexWrap: "wrap",
-        marginBottom: 18,
-        padding: 16,
+        marginBottom: 10,
+        padding: 12,
         borderRadius: 22,
         border: "1px solid rgba(255,255,255,0.10)",
         background: "linear-gradient(180deg, rgba(255,255,255,0.06), rgba(255,255,255,0.03))",
@@ -342,8 +372,17 @@ function AppHeader({
         }}
       />
 
-      <div style={{ position: "relative", flex: "1 1 420px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+      <div style={{ position: "relative", minWidth: 0, flex: 1 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            flexWrap: "nowrap",
+            whiteSpace: "nowrap",
+            minWidth: 0,
+          }}
+        >
           <div
             style={{
               fontSize: 34,
@@ -352,14 +391,17 @@ function AppHeader({
               textTransform: "uppercase",
               lineHeight: 1.05,
               textShadow: "0 0 18px rgba(255,215,0,0.22)",
+              whiteSpace: "nowrap",
+              flexShrink: 1,
+              minWidth: 0,
             }}
           >
-            Albixximo Union Tools
+            {mainTitle}
           </div>
 
           <span
             style={{
-              fontSize: 12,
+              fontSize: 14,
               padding: "6px 10px",
               borderRadius: 999,
               border: "1px solid rgba(255,255,255,0.14)",
@@ -367,18 +409,20 @@ function AppHeader({
               opacity: 0.95,
               letterSpacing: 0.6,
               textTransform: "uppercase",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
             }}
           >
-            Union CSV Extractor
+            {sideLabel}
           </span>
         </div>
 
-        <div style={{ marginTop: 6, fontSize: 13, opacity: 0.9 }}>PRT Timing Assistant</div>
+        <div style={{ marginTop: 5, fontSize: 13, opacity: 0.9, whiteSpace: "nowrap" }}>{subtitle}</div>
 
         <div
           style={{
-            marginTop: 12,
-            height: 10,
+            marginTop: 8,
+            height: 7,
             borderRadius: 999,
             background:
               "linear-gradient(90deg, rgba(255,215,0,0.0) 0%, rgba(255,215,0,0.35) 18%, rgba(255,255,255,0.14) 50%, rgba(160,90,255,0.30) 82%, rgba(160,90,255,0.0) 100%)",
@@ -428,11 +472,12 @@ function AppHeader({
             position: "relative",
             display: "grid",
             placeItems: "center",
-            padding: 10,
+            padding: 8,
             borderRadius: 18,
             border: "1px solid rgba(255,255,255,0.12)",
             background: "rgba(0,0,0,0.18)",
             textDecoration: "none",
+            flexShrink: 0,
           }}
         >
           <div
@@ -450,7 +495,7 @@ function AppHeader({
             src="/prt_logo.png"
             alt="PRT"
             style={{
-              height: 74,
+              height: 56,
               width: "auto",
               opacity: 0.95,
               filter:
@@ -463,12 +508,48 @@ function AppHeader({
   )
 }
 
+function SummaryStrip({
+  ppPilot,
+  gvPilot,
+  unionMeta,
+  exporting = false,
+}: {
+  ppPilot: string
+  gvPilot: string
+  unionMeta: UnionMeta
+  exporting?: boolean
+}) {
+  return (
+    <div
+      style={{
+        padding: "16px 18px",
+        borderRadius: 20,
+        border: "1px solid rgba(255,255,255,0.12)",
+        background: "rgba(255,255,255,0.05)",
+        boxShadow: "0 10px 40px rgba(0,0,0,0.35)",
+      }}
+    >
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
+          <HeaderBadge label="PP" value={ppPilot} variant="gold" exporting={exporting} />
+          <HeaderBadge label="GV" value={gvPilot} variant="violet" exporting={exporting} />
+          <HeaderBadge label="GARA" value={unionMeta.gara} variant="gold" exporting={exporting} />
+          <HeaderBadge label="LOBBY" value={unionMeta.lobby} variant="violet" exporting={exporting} />
+          <HeaderBadge label="LEGA" value={unionMeta.lega} variant="gold" exporting={exporting} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ResultsTable({
   previewRows,
   exporting = false,
+  tableTitle = "Classifica Union (output)",
 }: {
   previewRows: UnionRow[]
   exporting?: boolean
+  tableTitle?: string
 }) {
   return (
     <div
@@ -476,12 +557,13 @@ function ResultsTable({
         borderRadius: 16,
         border: "1px solid rgba(255,255,255,0.10)",
         background: "rgba(0,0,0,0.22)",
-        overflow: "hidden",
+        overflowX: "auto",
+        overflowY: "hidden",
       }}
     >
       <div
         style={{
-          padding: "12px 14px",
+          padding: exporting ? "11px 14px" : "12px 14px",
           borderBottom: "1px solid rgba(255,255,255,0.10)",
           display: "flex",
           justifyContent: "space-between",
@@ -489,15 +571,24 @@ function ResultsTable({
           flexWrap: "wrap",
         }}
       >
-        <div style={{ fontWeight: 900 }}>Classifica Union (output)</div>
-        <div style={{ fontSize: 12, opacity: 0.8 }}>{previewRows.length} righe</div>
+        <div style={{ fontWeight: 900, fontSize: exporting ? 15 : undefined }}>{tableTitle}</div>
+        <div style={{ fontSize: exporting ? 13 : 12, opacity: 0.88, fontWeight: exporting ? 800 : undefined }}>
+          {exporting ? `Partecipanti: ${previewRows.length}` : `${previewRows.length} righe`}
+        </div>
       </div>
 
-      <div style={{ overflow: "visible" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", tableLayout: "fixed" }}>
+      <div style={{ minWidth: 0 }}>
+        <table
+          style={{
+            width: "100%",
+            minWidth: exporting ? 1660 : 1320,
+            borderCollapse: "collapse",
+            tableLayout: "fixed",
+          }}
+        >
           <thead
             style={{
-              position: "static",
+              position: exporting ? "static" : "sticky",
               top: 0,
               zIndex: 2,
               background: "rgba(10,12,18,0.92)",
@@ -505,23 +596,31 @@ function ResultsTable({
             }}
           >
             <tr>
-              <th style={{ padding: "12px 12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 64 }}>#</th>
-              <th style={{ padding: "12px 12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 220 }}>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: 70 }}>
+                #
+              </th>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 260 : 220 }}>
                 Nome pilota
               </th>
-              <th style={{ padding: "12px 12px", textAlign: "left", fontSize: 12, opacity: 0.8 }}>Auto</th>
-              <th style={{ padding: "12px 12px", textAlign: "right", fontSize: 12, opacity: 0.8, width: 170 }}>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 430 : undefined }}>
+                Auto
+              </th>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "right", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 210 : 170 }}>
                 Distacchi
               </th>
-              <th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.8, width: 90 }}>PP</th>
-              <th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.8, width: 90 }}>GV</th>
-              <th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.8, width: 90 }}>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 110 : 90 }}>
+                PP
+              </th>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 110 : 90 }}>
+                GV
+              </th>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 110 : 90 }}>
                 Gara
               </th>
-              <th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.8, width: 90 }}>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 110 : 90 }}>
                 Lobby
               </th>
-              <th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.8, width: 120 }}>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 150 : 120 }}>
                 Lega
               </th>
             </tr>
@@ -535,37 +634,65 @@ function ResultsTable({
 
               return (
                 <tr key={`${r.posizione}-${r.nomePilota}-${i}`} style={rowStyleForPos(r.posizione, fallbackBg)}>
-                  <TableCell>
+                  <TableCell exporting={exporting}>
                     <PosBadge pos={r.posizione} />
                   </TableCell>
 
-                  <TableCell>{r.nomePilota}</TableCell>
+                  <TableCell
+                    exporting={exporting}
+                    style={{
+                      fontSize: exporting ? 18 : undefined,
+                      fontWeight: exporting ? (r.posizione === 1 ? 800 : 700) : undefined,
+                      letterSpacing: exporting ? "0.04em" : undefined,
+                      color: exporting ? (r.posizione === 1 ? "#fff6cc" : "#ffffff") : undefined,
+                      textShadow: exporting ? (r.posizione === 1 ? "0 0 10px rgba(255,215,0,0.45)" : "none") : undefined,
+                    }}
+                  >
+                    {r.nomePilota}
+                  </TableCell>
 
-                  <TableCell dim={!r.auto} style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  <TableCell
+                    exporting={exporting}
+                    dim={!r.auto}
+                    style={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      fontSize: exporting ? 17 : undefined,
+                    }}
+                  >
                     {r.auto || "-"}
                   </TableCell>
 
-                  <TableCell align="right" mono style={{ whiteSpace: "nowrap" }}>
-                    {renderDistaccoCell(r.distacchi)}
+                  <TableCell
+                    exporting={exporting}
+                    align="right"
+                    mono
+                    style={{
+                      whiteSpace: "nowrap",
+                      fontSize: exporting ? 17 : undefined,
+                    }}
+                  >
+                    {renderDistaccoCell(r.distacchi, exporting)}
                   </TableCell>
 
-                  <TableCell align="center" mono dim={!isPp}>
-                    {isPp ? <Pill left="PP" variant="gold" /> : "-"}
+                  <TableCell exporting={exporting} align="center" mono dim={!isPp}>
+                    {isPp ? <Pill left="PP" variant="gold" exporting={exporting} /> : "-"}
                   </TableCell>
 
-                  <TableCell align="center" mono dim={!isGv}>
-                    {isGv ? <Pill left="GV" variant="violet" /> : "-"}
+                  <TableCell exporting={exporting} align="center" mono dim={!isGv}>
+                    {isGv ? <Pill left="GV" variant="violet" exporting={exporting} /> : "-"}
                   </TableCell>
 
-                  <TableCell align="center" mono dim={!r.gara}>
+                  <TableCell exporting={exporting} align="center" mono dim={!r.gara}>
                     {r.gara || "-"}
                   </TableCell>
 
-                  <TableCell align="center" mono dim={!r.lobby}>
+                  <TableCell exporting={exporting} align="center" mono dim={!r.lobby}>
                     {r.lobby || "-"}
                   </TableCell>
 
-                  <TableCell align="center" mono dim={!r.lega}>
+                  <TableCell exporting={exporting} align="center" mono dim={!r.lega}>
                     {r.lega || "-"}
                   </TableCell>
                 </tr>
@@ -595,12 +722,42 @@ export default function Page() {
   const [loginError, setLoginError] = useState("")
   const [pulse, setPulse] = useState(0)
 
+  const [showExportModal, setShowExportModal] = useState(false)
+  const [exportTexts, setExportTexts] = useState<ExportTexts>({
+    mainTitle: "ALBIXXIMO UNION TOOLS",
+    sideLabel: "UNION CSV EXTRACTOR",
+    subtitle: "PRT Timing Assistant",
+  })
+  const [exportTextsDraft, setExportTextsDraft] = useState<ExportTexts>({
+    mainTitle: "ALBIXXIMO UNION TOOLS",
+    sideLabel: "UNION CSV EXTRACTOR",
+    subtitle: "PRT Timing Assistant",
+  })
+
   useEffect(() => {
     const savedAuth = sessionStorage.getItem(AUTH_STORAGE_KEY)
     if (savedAuth === "true") {
       setAuthorized(true)
     }
+
+    const savedExportTexts = localStorage.getItem(EXPORT_TEXTS_STORAGE_KEY)
+    if (savedExportTexts) {
+      try {
+        const parsed = JSON.parse(savedExportTexts)
+        const nextTexts: ExportTexts = {
+          mainTitle: parsed?.mainTitle || "ALBIXXIMO UNION TOOLS",
+          sideLabel: parsed?.sideLabel || "UNION CSV EXTRACTOR",
+          subtitle: parsed?.subtitle || "PRT Timing Assistant",
+        }
+        setExportTexts(nextTexts)
+        setExportTextsDraft(nextTexts)
+      } catch {}
+    }
   }, [])
+
+  useEffect(() => {
+    localStorage.setItem(EXPORT_TEXTS_STORAGE_KEY, JSON.stringify(exportTexts))
+  }, [exportTexts])
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -671,6 +828,7 @@ export default function Page() {
     setWarning("")
     setShowTable(true)
     setShowReq(false)
+    setShowExportModal(false)
     setInputPassword("")
     setLoginError("")
     if (fileInputRef.current) {
@@ -678,17 +836,25 @@ export default function Page() {
     }
   }
 
-  async function exportTablePng() {
+  async function performExportTablePng() {
     if (!exportRef.current || rows.length === 0) return
 
     try {
       setExporting(true)
-      await new Promise((resolve) => setTimeout(resolve, 120))
+      await new Promise((resolve) => setTimeout(resolve, 140))
 
       const dataUrl = await toPng(exportRef.current, {
         cacheBust: true,
         pixelRatio: 2,
+        width: 1920,
+        height: 1080,
+        canvasWidth: 1920,
+        canvasHeight: 1080,
         backgroundColor: "#07080c",
+        style: {
+          transform: "scale(1)",
+          transformOrigin: "top left",
+        },
       })
 
       const link = document.createElement("a")
@@ -700,6 +866,24 @@ export default function Page() {
     } finally {
       setExporting(false)
     }
+  }
+
+  function openExportModal() {
+    setExportTextsDraft(exportTexts)
+    setShowExportModal(true)
+  }
+
+  async function confirmExportPng() {
+    const nextTexts = {
+      mainTitle: (exportTextsDraft.mainTitle || "ALBIXXIMO UNION TOOLS").trim(),
+      sideLabel: (exportTextsDraft.sideLabel || "UNION CSV EXTRACTOR").trim(),
+      subtitle: (exportTextsDraft.subtitle || "PRT Timing Assistant").trim(),
+    }
+
+    setExportTexts(nextTexts)
+    setShowExportModal(false)
+    await new Promise((resolve) => setTimeout(resolve, 80))
+    await performExportTablePng()
   }
 
   async function run() {
@@ -751,6 +935,7 @@ export default function Page() {
     setWarning("")
     setShowTable(true)
     setShowReq(false)
+    setShowExportModal(false)
     setInputPassword("")
     setLoginError("")
 
@@ -1213,7 +1398,7 @@ export default function Page() {
             {rows.length > 0 && (
               <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                 <button
-                  onClick={exportTablePng}
+                  onClick={openExportModal}
                   disabled={exporting}
                   style={{
                     padding: "12px 16px",
@@ -1328,12 +1513,142 @@ export default function Page() {
         </div>
       </div>
 
+      {showExportModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.72)",
+            backdropFilter: "blur(6px)",
+            display: "grid",
+            placeItems: "center",
+            zIndex: 9999,
+            padding: 20,
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 720,
+              borderRadius: 22,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "linear-gradient(180deg, rgba(18,22,31,0.98), rgba(8,10,15,0.98))",
+              boxShadow: "0 20px 80px rgba(0,0,0,0.55)",
+              padding: 20,
+              display: "grid",
+              gap: 16,
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 20, fontWeight: 900 }}>Personalizza intestazione PNG</div>
+              <div style={{ marginTop: 6, fontSize: 13, opacity: 0.76 }}>
+                Modifichi solo il contenuto dei testi. Font, dimensioni e stile restano invariati.
+              </div>
+            </div>
+
+            <div style={{ display: "grid", gap: 12 }}>
+              <div style={{ display: "grid", gap: 6 }}>
+                <label style={{ fontSize: 12, opacity: 0.82, textTransform: "uppercase", fontWeight: 900 }}>
+                  Titolo principale
+                </label>
+                <input
+                  value={exportTextsDraft.mainTitle}
+                  onChange={(e) => setExportTextsDraft((prev) => ({ ...prev, mainTitle: e.target.value }))}
+                  style={{
+                    width: "100%",
+                    padding: "12px 14px",
+                    borderRadius: 12,
+                    border: "1px solid rgba(255,255,255,0.14)",
+                    background: "rgba(0,0,0,0.26)",
+                    color: "white",
+                  }}
+                />
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <label style={{ fontSize: 12, opacity: 0.82, textTransform: "uppercase", fontWeight: 900 }}>
+                  Testo accanto
+                </label>
+                <input
+                  value={exportTextsDraft.sideLabel}
+                  onChange={(e) => setExportTextsDraft((prev) => ({ ...prev, sideLabel: e.target.value }))}
+                  style={{
+                    width: "100%",
+                    padding: "12px 14px",
+                    borderRadius: 12,
+                    border: "1px solid rgba(255,255,255,0.14)",
+                    background: "rgba(0,0,0,0.26)",
+                    color: "white",
+                  }}
+                />
+              </div>
+
+              <div style={{ display: "grid", gap: 6 }}>
+                <label style={{ fontSize: 12, opacity: 0.82, textTransform: "uppercase", fontWeight: 900 }}>
+                  Testo piccolo sotto
+                </label>
+                <input
+                  value={exportTextsDraft.subtitle}
+                  onChange={(e) => setExportTextsDraft((prev) => ({ ...prev, subtitle: e.target.value }))}
+                  style={{
+                    width: "100%",
+                    padding: "12px 14px",
+                    borderRadius: 12,
+                    border: "1px solid rgba(255,255,255,0.14)",
+                    background: "rgba(0,0,0,0.26)",
+                    color: "white",
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, flexWrap: "wrap" }}>
+              <button
+                onClick={() => setShowExportModal(false)}
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: 14,
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  background: "rgba(255,255,255,0.06)",
+                  color: "white",
+                  cursor: "pointer",
+                  fontWeight: 900,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                Annulla
+              </button>
+
+              <button
+                onClick={confirmExportPng}
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: 14,
+                  border: "1px solid rgba(160,90,255,0.30)",
+                  background: "rgba(160,90,255,0.20)",
+                  color: "white",
+                  cursor: "pointer",
+                  fontWeight: 900,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                  boxShadow: "0 0 22px rgba(160,90,255,0.12)",
+                }}
+              >
+                Esporta PNG
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div
         style={{
           position: "fixed",
           left: "-20000px",
           top: 0,
-          width: 1320,
+          width: 1920,
+          height: 1080,
           pointerEvents: "none",
           zIndex: -1,
           opacity: 1,
@@ -1343,9 +1658,13 @@ export default function Page() {
           {rows.length > 0 && (
             <div
               style={{
+                width: 1920,
+                height: 1080,
+                boxSizing: "border-box",
                 display: "grid",
-                gap: 16,
-                padding: 20,
+                gap: 12,
+                padding: "10px 18px 12px 18px",
+                alignContent: "start",
                 borderRadius: 22,
                 background:
                   "radial-gradient(1200px 600px at 15% 10%, rgba(255,215,0,0.14), transparent 50%)," +
@@ -1353,10 +1672,27 @@ export default function Page() {
                   "linear-gradient(180deg, #0b0d12 0%, #07080c 100%)",
                 border: "1px solid rgba(255,255,255,0.10)",
                 boxShadow: "0 14px 60px rgba(0,0,0,0.45)",
+                overflow: "hidden",
               }}
             >
-              <AppHeader />
-              <ResultsTable previewRows={rows} exporting={true} />
+              <AppHeader
+                mainTitle={exportTexts.mainTitle}
+                sideLabel={exportTexts.sideLabel}
+                subtitle={exportTexts.subtitle}
+              />
+
+              <SummaryStrip
+                ppPilot={ppPilot}
+                gvPilot={gvPilot}
+                unionMeta={unionMeta}
+                exporting={true}
+              />
+
+              <ResultsTable
+                previewRows={rows}
+                exporting={true}
+                tableTitle="Classifica Union"
+              />
             </div>
           )}
         </div>
