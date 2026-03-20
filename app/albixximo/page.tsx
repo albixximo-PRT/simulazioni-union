@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react"
 import { toPng } from "html-to-image"
 
 const APP_PASSWORD = "Gabus"
+const AUTH_STORAGE_KEY = "albixximo_union_authorized"
 
 type UnionRow = {
   posizione: number
@@ -306,7 +307,11 @@ function LegendBare() {
   )
 }
 
-function AppHeader() {
+function AppHeader({
+  onLogout,
+}: {
+  onLogout?: () => void
+}) {
   return (
     <div
       style={{
@@ -337,7 +342,7 @@ function AppHeader() {
         }}
       />
 
-      <div style={{ position: "relative" }}>
+      <div style={{ position: "relative", flex: "1 1 420px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
           <div
             style={{
@@ -383,45 +388,77 @@ function AppHeader() {
         />
       </div>
 
-      <a
-        href="/prt_logo.png"
-        target="_blank"
-        rel="noreferrer"
-        title="PRT Logo"
+      <div
         style={{
           position: "relative",
-          display: "grid",
-          placeItems: "center",
-          padding: 10,
-          borderRadius: 18,
-          border: "1px solid rgba(255,255,255,0.12)",
-          background: "rgba(0,0,0,0.18)",
-          textDecoration: "none",
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          flexWrap: "wrap",
+          justifyContent: "flex-end",
         }}
       >
-        <div
+        {onLogout ? (
+          <button
+            onClick={onLogout}
+            style={{
+              padding: "10px 14px",
+              borderRadius: 14,
+              border: "1px solid rgba(255,255,255,0.14)",
+              background: "rgba(255,255,255,0.06)",
+              color: "white",
+              cursor: "pointer",
+              fontWeight: 900,
+              letterSpacing: 0.5,
+              textTransform: "uppercase",
+              fontSize: 12,
+            }}
+            title="Esci e richiedi di nuovo la password"
+          >
+            Logout
+          </button>
+        ) : null}
+
+        <a
+          href="/prt_logo.png"
+          target="_blank"
+          rel="noreferrer"
+          title="PRT Logo"
           style={{
-            position: "absolute",
-            inset: -6,
-            borderRadius: 22,
-            background: "radial-gradient(circle at 50% 40%, rgba(255,215,0,0.35), transparent 60%)",
-            filter: "blur(10px)",
-            opacity: 0.95,
-            pointerEvents: "none",
+            position: "relative",
+            display: "grid",
+            placeItems: "center",
+            padding: 10,
+            borderRadius: 18,
+            border: "1px solid rgba(255,255,255,0.12)",
+            background: "rgba(0,0,0,0.18)",
+            textDecoration: "none",
           }}
-        />
-        <img
-          src="/prt_logo.png"
-          alt="PRT"
-          style={{
-            height: 74,
-            width: "auto",
-            opacity: 0.95,
-            filter:
-              "drop-shadow(0 0 14px rgba(255,215,0,0.45)) drop-shadow(0 0 34px rgba(255,215,0,0.18))",
-          }}
-        />
-      </a>
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: -6,
+              borderRadius: 22,
+              background: "radial-gradient(circle at 50% 40%, rgba(255,215,0,0.35), transparent 60%)",
+              filter: "blur(10px)",
+              opacity: 0.95,
+              pointerEvents: "none",
+            }}
+          />
+          <img
+            src="/prt_logo.png"
+            alt="PRT"
+            style={{
+              height: 74,
+              width: "auto",
+              opacity: 0.95,
+              filter:
+                "drop-shadow(0 0 14px rgba(255,215,0,0.45)) drop-shadow(0 0 34px rgba(255,215,0,0.18))",
+            }}
+          />
+        </a>
+      </div>
     </div>
   )
 }
@@ -559,6 +596,13 @@ export default function Page() {
   const [pulse, setPulse] = useState(0)
 
   useEffect(() => {
+    const savedAuth = sessionStorage.getItem(AUTH_STORAGE_KEY)
+    if (savedAuth === "true") {
+      setAuthorized(true)
+    }
+  }, [])
+
+  useEffect(() => {
     const id = setInterval(() => {
       setPulse((p) => (p === 0 ? 1 : 0))
     }, 2200)
@@ -606,11 +650,32 @@ export default function Page() {
   function handleLogin() {
     if (inputPassword === APP_PASSWORD) {
       setAuthorized(true)
+      sessionStorage.setItem(AUTH_STORAGE_KEY, "true")
       setLoginError("")
       return
     }
 
     setLoginError("Password errata")
+  }
+
+  function handleLogout() {
+    sessionStorage.removeItem(AUTH_STORAGE_KEY)
+    setAuthorized(false)
+    setFiles([])
+    setCsv("")
+    setRows([])
+    setUnionMeta({ gara: "", lobby: "", lega: "" })
+    setLoading(false)
+    setExporting(false)
+    setError("")
+    setWarning("")
+    setShowTable(true)
+    setShowReq(false)
+    setInputPassword("")
+    setLoginError("")
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
   }
 
   async function exportTablePng() {
@@ -676,7 +741,22 @@ export default function Page() {
   }
 
   function resetAll() {
-    window.location.reload()
+    setFiles([])
+    setCsv("")
+    setRows([])
+    setUnionMeta({ gara: "", lobby: "", lega: "" })
+    setLoading(false)
+    setExporting(false)
+    setError("")
+    setWarning("")
+    setShowTable(true)
+    setShowReq(false)
+    setInputPassword("")
+    setLoginError("")
+
+    if (fileInputRef.current) {
+      fileInputRef.current.value = ""
+    }
   }
 
   if (!authorized) {
@@ -887,7 +967,7 @@ export default function Page() {
       }}
     >
       <div style={{ maxWidth: 1320, margin: "0 auto" }}>
-        <AppHeader />
+        <AppHeader onLogout={handleLogout} />
 
         <div
           style={{
