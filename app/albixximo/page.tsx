@@ -561,7 +561,7 @@ export default function Page() {
 useEffect(() => {
   const id = setInterval(() => {
     setPulse((p) => (p === 0 ? 1 : 0))
-  }, 1200)
+  }, 2200)
 
   return () => clearInterval(id)
 }, [])
@@ -688,20 +688,20 @@ useEffect(() => {
       />
 
       <div
-        style={{
-          width: "100%",
-          maxWidth: 760,
-          borderRadius: 28,
-          padding: "60px 52px",
-          background: "rgba(14, 18, 32, 0.88)",
-          border: "1px solid rgba(163, 95, 255, 0.34)",
-          boxShadow:
-            "0 0 60px rgba(120,70,255,0.20), 0 0 140px rgba(255,215,0,0.08)",
-          backdropFilter: "blur(14px)",
-          position: "relative",
-          zIndex: 1,
-        }}
-      >
+  style={{
+    width: "100%",
+    maxWidth: 680,
+    borderRadius: 28,
+    padding: "48px 32px",
+    background: "rgba(14, 18, 32, 0.88)",
+    border: "1px solid rgba(163, 95, 255, 0.34)",
+    boxShadow:
+      "0 0 60px rgba(120,70,255,0.20), 0 0 140px rgba(255,215,0,0.08)",
+    backdropFilter: "blur(14px)",
+    position: "relative",
+    zIndex: 1,
+  }}
+>
         <div style={{ textAlign: "center", marginBottom: 34 }}>
           <div
   style={{
