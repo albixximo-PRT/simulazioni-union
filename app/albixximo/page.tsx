@@ -37,6 +37,13 @@ const DEFAULT_EXPORT_TEXTS: ExportTexts = {
   subtitle: "PRT Timing Assistant",
 }
 
+function formatLobbyShort(lobby: string) {
+  const raw = String(lobby || "").trim()
+  const match = raw.match(/^A0*(\d+)$/i)
+  if (match) return `A${Number(match[1])}`
+  return raw || "union"
+}
+
 function TableCell({
   children,
   align,
@@ -857,7 +864,7 @@ export default function Page() {
       })
 
       const link = document.createElement("a")
-      link.download = `${((unionMeta.lobby || "union").trim().replace(/[^\w-]/g, "_"))}.png`
+      link.download = `${formatLobbyShort(unionMeta.lobby).replace(/[^\w-]/g, "_")}.png`
       link.href = dataUrl
       link.click()
     } catch (e: any) {
@@ -1490,8 +1497,8 @@ export default function Page() {
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                   <div style={{ fontWeight: 900 }}>CSV Union Output</div>
                   <a
-  href={"data:text/csv;charset=utf-8," + encodeURIComponent(csv)}
-  download={`${((unionMeta.lobby || "union").trim().replace(/[^\w-]/g, "_"))}.csv`}
+                    href={"data:text/csv;charset=utf-8," + encodeURIComponent(csv)}
+                    download={`${formatLobbyShort(unionMeta.lobby).replace(/[^\w-]/g, "_")}.csv`}
                     style={{
                       color: "white",
                       textDecoration: "none",
