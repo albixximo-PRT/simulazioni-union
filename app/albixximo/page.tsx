@@ -934,26 +934,8 @@ export default function Page() {
   }
 
   function resetAll() {
-    setFiles([])
-    setCsv("")
-    setRows([])
-    setUnionMeta({ gara: "", lobby: "", lega: "" })
-    setLoading(false)
-    setExporting(false)
-    setError("")
-    setWarning("")
-    setShowTable(true)
-    setShowReq(false)
-    setShowExportModal(false)
-    setInputPassword("")
-    setLoginError("")
-
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ""
-    }
-
-    setWorkspaceKey((k) => k + 1)
-  }
+  window.location.reload()
+}
 
   if (!authorized) {
     return (
