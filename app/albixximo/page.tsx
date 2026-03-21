@@ -857,7 +857,7 @@ export default function Page() {
       })
 
       const link = document.createElement("a")
-      link.download = "albixximo_union_output.png"
+      link.download = `${((unionMeta.lobby || "union").trim().replace(/[^\w-]/g, "_"))}.png`
       link.href = dataUrl
       link.click()
     } catch (e: any) {
@@ -1490,8 +1490,8 @@ export default function Page() {
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                   <div style={{ fontWeight: 900 }}>CSV Union Output</div>
                   <a
-                    href={"data:text/csv;charset=utf-8," + encodeURIComponent(csv)}
-                    download="albixximo_union.csv"
+  href={"data:text/csv;charset=utf-8," + encodeURIComponent(csv)}
+  download={`${((unionMeta.lobby || "union").trim().replace(/[^\w-]/g, "_"))}.csv`}
                     style={{
                       color: "white",
                       textDecoration: "none",
