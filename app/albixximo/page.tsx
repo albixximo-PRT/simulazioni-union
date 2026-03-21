@@ -714,6 +714,7 @@ export default function Page() {
   const [showExportModal, setShowExportModal] = useState(false)
   const [exportTexts, setExportTexts] = useState<ExportTexts>(DEFAULT_EXPORT_TEXTS)
   const [exportTextsDraft, setExportTextsDraft] = useState<ExportTexts>(DEFAULT_EXPORT_TEXTS)
+  const [workspaceKey, setWorkspaceKey] = useState(0)
 
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const exportRef = useRef<HTMLDivElement | null>(null)
@@ -830,6 +831,8 @@ export default function Page() {
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
+
+    setWorkspaceKey((k) => k + 1)
   }
 
   async function performExportTablePng() {
@@ -917,6 +920,9 @@ export default function Page() {
       setError(String(e?.message || e))
     } finally {
       setLoading(false)
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
     }
   }
 
@@ -938,6 +944,8 @@ export default function Page() {
     if (fileInputRef.current) {
       fileInputRef.current.value = ""
     }
+
+    setWorkspaceKey((k) => k + 1)
   }
 
   if (!authorized) {
@@ -1135,6 +1143,7 @@ export default function Page() {
 
   return (
     <div
+      key={workspaceKey}
       style={{
         position: "relative",
         minHeight: "100vh",
