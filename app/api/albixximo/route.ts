@@ -1647,6 +1647,9 @@ export async function POST(req: NextRequest) {
       csv,
       polePilot,
       fastestLapPilot,
+      detectedPoleDriver: polePilot || "",
+      detectedBestLapDriver: fastestLapPilot || "",
+      detectedRaceOrder: outBase.map((r) => r.pilota || ""),
       warning,
       stats: {
         qualiRows: qualiRows.length,

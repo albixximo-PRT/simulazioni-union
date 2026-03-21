@@ -31,6 +31,25 @@ type ExportTexts = {
   subtitle: string
 }
 
+type MatchFieldStatus = "ok" | "warn" | "error"
+
+type MatchSummary = {
+  overallStatus: "ok" | "warn" | "error"
+  percentage: number
+  fields: {
+    posizione: MatchFieldStatus
+    nomePilota: MatchFieldStatus
+    auto: MatchFieldStatus
+    distacchi: MatchFieldStatus
+    pp: MatchFieldStatus
+    gv: MatchFieldStatus
+    gara: MatchFieldStatus
+    lobby: MatchFieldStatus
+    lega: MatchFieldStatus
+  }
+  notes: string[]
+}
+
 const DEFAULT_EXPORT_TEXTS: ExportTexts = {
   mainTitle: "ALBIXXIMO UNION TOOLS",
   sideLabel: "UNION CSV EXTRACTOR",
@@ -42,6 +61,285 @@ function formatLobbyShort(lobby: string) {
   const match = raw.match(/^A0*(\d+)$/i)
   if (match) return `A${Number(match[1])}`
   return raw || "union"
+}
+
+function normalizeMatchName(name: string) {
+  return String(name || "")
+    .toLowerCase()
+    .replace(/__/g, "_")
+    .replace(/_/g, " ")
+    .replace(/[@#'"`´’‘.,\-]+/g, " ")
+    .replace(/[^a-z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+function sameDriverForMatch(a: string, b: string) {
+  const aa = normalizeMatchName(a)
+  const bb = normalizeMatchName(b)
+  if (!aa || !bb) return false
+  return aa === bb
+}
+
+function normalizeSimpleValue(value: string) {
+  return String(value || "").trim().toLowerCase()
+}
+
+function isUnionDistaccoValid(value: string, posizione: number) {
+  const v = String(value || "").trim()
+  if (!v) return posizione === 1 ? false : true
+
+  if (posizione === 1) {
+    return /^(?:\d+:)?\d{1,2}:\d{2}\.\d{3}$/.test(v)
+  }
+
+  if (v.toUpperCase() === "BOX") return true
+  if (v.toUpperCase() === "DNF") return true
+  if (v.toUpperCase() === "DOPPIATO") return true
+  if (/^\+\d+\.\d{3}$/.test(v)) return true
+  if (/^\+\d+:\d{2}\.\d{3}$/.test(v)) return true
+  if (/^(?:\d+:)?\d{1,2}:\d{2}\.\d{3}$/.test(v)) return true
+
+  return false
+}
+
+function statusBadge(status: MatchFieldStatus) {
+  if (status === "ok") return "✅"
+  if (status === "warn") return "⚠️"
+  return "❌"
+}
+
+function overallBoxStyle(status: "ok" | "warn" | "error"): React.CSSProperties {
+  if (status === "ok") {
+    return {
+      background: "rgba(34,197,94,0.14)",
+      border: "1px solid rgba(34,197,94,0.45)",
+      color: "#dcfce7",
+    }
+  }
+
+  if (status === "warn") {
+    return {
+      background: "rgba(250,204,21,0.12)",
+      border: "1px solid rgba(250,204,21,0.45)",
+      color: "#fef3c7",
+    }
+  }
+
+  return {
+    background: "rgba(239,68,68,0.14)",
+    border: "1px solid rgba(239,68,68,0.45)",
+    color: "#fee2e2",
+  }
+}
+
+function matchCellStyle(status: MatchFieldStatus): React.CSSProperties {
+  if (status === "ok") {
+    return {
+      background: "rgba(34,197,94,0.12)",
+      border: "1px solid rgba(34,197,94,0.30)",
+    }
+  }
+
+  if (status === "warn") {
+    return {
+      background: "rgba(250,204,21,0.10)",
+      border: "1px solid rgba(250,204,21,0.28)",
+    }
+  }
+
+  return {
+    background: "rgba(239,68,68,0.12)",
+    border: "1px solid rgba(239,68,68,0.30)",
+  }
+}
+
+function buildUnionMatchSummary({
+  rows,
+  unionMeta,
+  detectedPoleDriver,
+  detectedBestLapDriver,
+  detectedRaceOrder,
+}: {
+  rows: UnionRow[]
+  unionMeta: UnionMeta
+  detectedPoleDriver: string
+  detectedBestLapDriver: string
+  detectedRaceOrder: string[]
+}): MatchSummary {
+  const notes: string[] = []
+
+  let posizione: MatchFieldStatus = "ok"
+  let nomePilota: MatchFieldStatus = "ok"
+  let auto: MatchFieldStatus = "ok"
+  let distacchi: MatchFieldStatus = "ok"
+  let pp: MatchFieldStatus = "ok"
+  let gv: MatchFieldStatus = "ok"
+  let gara: MatchFieldStatus = "ok"
+  let lobby: MatchFieldStatus = "ok"
+  let lega: MatchFieldStatus = "ok"
+
+  if (!rows.length) {
+    return {
+      overallStatus: "warn",
+      percentage: 0,
+      fields: {
+        posizione: "warn",
+        nomePilota: "warn",
+        auto: "warn",
+        distacchi: "warn",
+        pp: "warn",
+        gv: "warn",
+        gara: "warn",
+        lobby: "warn",
+        lega: "warn",
+      },
+      notes: ["Nessun dato da verificare."],
+    }
+  }
+
+  const sortedRows = [...rows].sort((a, b) => a.posizione - b.posizione)
+
+  for (let i = 0; i < sortedRows.length; i++) {
+    if (sortedRows[i].posizione !== i + 1) {
+      posizione = "error"
+      notes.push("Ordine posizioni non consecutivo.")
+      break
+    }
+  }
+
+  for (const row of rows) {
+    if (!String(row.nomePilota || "").trim()) {
+      nomePilota = "error"
+      notes.push("Presente almeno un nome pilota vuoto.")
+      break
+    }
+  }
+
+  for (const row of rows) {
+    if (!String(row.auto || "").trim()) {
+      auto = "error"
+      notes.push("Presente almeno un'auto vuota.")
+      break
+    }
+  }
+
+  for (const row of rows) {
+    if (!isUnionDistaccoValid(row.distacchi, row.posizione)) {
+      distacchi = "warn"
+      notes.push("Almeno un distacco ha formato non standard UNION.")
+      break
+    }
+  }
+
+  const csvPoleRow = rows.find((r) => String(r.pp || "").trim().toUpperCase() === "PP")
+  const csvGvRow = rows.find((r) => String(r.gv || "").trim().toUpperCase() === "GV")
+
+  if (detectedPoleDriver) {
+    if (!csvPoleRow) {
+      pp = "error"
+      notes.push("PP non presente nel CSV.")
+    } else if (!sameDriverForMatch(csvPoleRow.nomePilota, detectedPoleDriver)) {
+      pp = "error"
+      notes.push("PP non coerente con la qualifica.")
+    }
+  } else if (!csvPoleRow) {
+    pp = "warn"
+    notes.push("PP non verificabile automaticamente.")
+  }
+
+  if (detectedBestLapDriver) {
+    if (!csvGvRow) {
+      gv = "error"
+      notes.push("GV non presente nel CSV.")
+    } else if (!sameDriverForMatch(csvGvRow.nomePilota, detectedBestLapDriver)) {
+      gv = "error"
+      notes.push("GV non coerente con la gara.")
+    }
+  } else if (!csvGvRow) {
+    gv = "warn"
+    notes.push("GV non verificabile automaticamente.")
+  }
+
+  if (detectedRaceOrder.length) {
+    for (let i = 0; i < Math.min(rows.length, detectedRaceOrder.length); i++) {
+      if (!sameDriverForMatch(rows[i].nomePilota, detectedRaceOrder[i])) {
+        nomePilota = "warn"
+        notes.push(`Possibile differenza nomi/ordine in posizione ${i + 1}.`)
+        break
+      }
+    }
+  }
+
+  const garaValues = new Set(rows.map((r) => normalizeSimpleValue(r.gara)))
+  const lobbyValues = new Set(rows.map((r) => normalizeSimpleValue(r.lobby)))
+  const legaValues = new Set(rows.map((r) => normalizeSimpleValue(r.lega)))
+
+  if (garaValues.size > 1) {
+    gara = "error"
+    notes.push("Valore Gara non uniforme.")
+  }
+  if (lobbyValues.size > 1) {
+    lobby = "error"
+    notes.push("Valore Lobby non uniforme.")
+  }
+  if (legaValues.size > 1) {
+    lega = "error"
+    notes.push("Valore Lega non uniforme.")
+  }
+
+  if (unionMeta.gara && normalizeSimpleValue(rows[0]?.gara) !== normalizeSimpleValue(unionMeta.gara)) {
+    gara = "error"
+    notes.push("Gara diversa dal meta rilevato.")
+  }
+
+  if (unionMeta.lobby && normalizeSimpleValue(rows[0]?.lobby) !== normalizeSimpleValue(unionMeta.lobby)) {
+    lobby = "error"
+    notes.push("Lobby diversa dal meta rilevato.")
+  }
+
+  if (unionMeta.lega && normalizeSimpleValue(rows[0]?.lega) !== normalizeSimpleValue(unionMeta.lega)) {
+    lega = "error"
+    notes.push("Lega diversa dal meta rilevato.")
+  }
+
+  const fields = {
+    posizione,
+    nomePilota,
+    auto,
+    distacchi,
+    pp,
+    gv,
+    gara,
+    lobby,
+    lega,
+  }
+
+  const values = Object.values(fields)
+  const okCount = values.filter((v) => v === "ok").length
+  const warnCount = values.filter((v) => v === "warn").length
+  const errorCount = values.filter((v) => v === "error").length
+
+  let percentage = 100
+  let overallStatus: "ok" | "warn" | "error" = "ok"
+
+  if (errorCount > 0) {
+    overallStatus = "error"
+    percentage = Math.round(((okCount + warnCount * 0.5) / values.length) * 100)
+  } else if (warnCount > 0) {
+    overallStatus = "warn"
+    percentage = Math.round(((okCount + warnCount * 0.8) / values.length) * 100)
+  }
+
+  if (percentage < 0) percentage = 0
+  if (percentage > 100) percentage = 100
+
+  return {
+    overallStatus,
+    percentage,
+    fields,
+    notes,
+  }
 }
 
 function TableCell({
@@ -814,6 +1112,10 @@ export default function Page() {
   const [exportTextsDraft, setExportTextsDraft] = useState<ExportTexts>(DEFAULT_EXPORT_TEXTS)
   const [workspaceKey, setWorkspaceKey] = useState(0)
 
+  const [detectedPoleDriver, setDetectedPoleDriver] = useState("")
+  const [detectedBestLapDriver, setDetectedBestLapDriver] = useState("")
+  const [detectedRaceOrder, setDetectedRaceOrder] = useState<string[]>([])
+
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const exportRef = useRef<HTMLDivElement | null>(null)
 
@@ -921,6 +1223,16 @@ export default function Page() {
     return row?.nomePilota || ""
   }, [rows])
 
+  const matchSummary = useMemo(() => {
+    return buildUnionMatchSummary({
+      rows,
+      unionMeta,
+      detectedPoleDriver,
+      detectedBestLapDriver,
+      detectedRaceOrder,
+    })
+  }, [rows, unionMeta, detectedPoleDriver, detectedBestLapDriver, detectedRaceOrder])
+
   function handleLogin() {
     if (inputPassword === APP_PASSWORD) {
       setAuthorized(true)
@@ -941,6 +1253,9 @@ export default function Page() {
     setCsv("")
     setRows([])
     setUnionMeta({ gara: "", lobby: "", lega: "" })
+    setDetectedPoleDriver("")
+    setDetectedBestLapDriver("")
+    setDetectedRaceOrder([])
     setLoading(false)
     setExporting(false)
     setError("")
@@ -1017,6 +1332,9 @@ export default function Page() {
     setCsv("")
     setRows([])
     setUnionMeta({ gara: "", lobby: "", lega: "" })
+    setDetectedPoleDriver("")
+    setDetectedBestLapDriver("")
+    setDetectedRaceOrder([])
 
     try {
       const fd = new FormData()
@@ -1030,6 +1348,9 @@ export default function Page() {
       } else {
         setCsv(data.csv || "")
         setRows(Array.isArray(data.unionRows) ? data.unionRows : [])
+        setDetectedPoleDriver(data.detectedPoleDriver || "")
+        setDetectedBestLapDriver(data.detectedBestLapDriver || "")
+        setDetectedRaceOrder(Array.isArray(data.detectedRaceOrder) ? data.detectedRaceOrder : [])
         setUnionMeta(
           data.unionMeta && typeof data.unionMeta === "object"
             ? {
@@ -1566,6 +1887,95 @@ export default function Page() {
                 }}
               >
                 ⚠️ Controlla gli screen caricati: alcuni dati potrebbero non essere corretti.
+              </div>
+            )}
+
+            {rows.length > 0 && (
+              <div
+                style={{
+                  borderRadius: 18,
+                  padding: 16,
+                  ...overallBoxStyle(matchSummary.overallStatus),
+                  boxShadow: "0 10px 30px rgba(0,0,0,0.22)",
+                  display: "grid",
+                  gap: 14,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                  <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: 0.2 }}>
+                    {matchSummary.overallStatus === "ok"
+                      ? "✅ MATCH 100%"
+                      : matchSummary.overallStatus === "warn"
+                        ? "⚠️ DA CONTROLLARE"
+                        : "❌ ERRORE REALE"}
+                  </div>
+
+                  <div style={{ fontSize: 16, fontWeight: 900 }}>
+                    Match esatto al {matchSummary.percentage}%
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
+                    gap: 10,
+                  }}
+                >
+                  <div style={{ borderRadius: 12, padding: "10px 12px", ...matchCellStyle(matchSummary.fields.posizione) }}>
+                    # {statusBadge(matchSummary.fields.posizione)}
+                  </div>
+                  <div style={{ borderRadius: 12, padding: "10px 12px", ...matchCellStyle(matchSummary.fields.nomePilota) }}>
+                    Nome pilota {statusBadge(matchSummary.fields.nomePilota)}
+                  </div>
+                  <div style={{ borderRadius: 12, padding: "10px 12px", ...matchCellStyle(matchSummary.fields.auto) }}>
+                    Auto {statusBadge(matchSummary.fields.auto)}
+                  </div>
+                  <div style={{ borderRadius: 12, padding: "10px 12px", ...matchCellStyle(matchSummary.fields.distacchi) }}>
+                    Distacchi {statusBadge(matchSummary.fields.distacchi)}
+                  </div>
+                  <div style={{ borderRadius: 12, padding: "10px 12px", ...matchCellStyle(matchSummary.fields.pp) }}>
+                    -PP- {statusBadge(matchSummary.fields.pp)}
+                  </div>
+                  <div style={{ borderRadius: 12, padding: "10px 12px", ...matchCellStyle(matchSummary.fields.gv) }}>
+                    -GV- {statusBadge(matchSummary.fields.gv)}
+                  </div>
+                  <div style={{ borderRadius: 12, padding: "10px 12px", ...matchCellStyle(matchSummary.fields.gara) }}>
+                    Gara {statusBadge(matchSummary.fields.gara)}
+                  </div>
+                  <div style={{ borderRadius: 12, padding: "10px 12px", ...matchCellStyle(matchSummary.fields.lobby) }}>
+                    Lobby {statusBadge(matchSummary.fields.lobby)}
+                  </div>
+                  <div style={{ borderRadius: 12, padding: "10px 12px", ...matchCellStyle(matchSummary.fields.lega) }}>
+                    Lega {statusBadge(matchSummary.fields.lega)}
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    display: "grid",
+                    gap: 6,
+                    fontSize: 12,
+                    opacity: 0.92,
+                  }}
+                >
+                  <div>
+                    <b>PP rilevata:</b> {detectedPoleDriver || "-"}
+                  </div>
+                  <div>
+                    <b>GV rilevato:</b> {detectedBestLapDriver || "-"}
+                  </div>
+                  {matchSummary.notes.length > 0 && (
+                    <div style={{ marginTop: 4 }}>
+                      <b>Note:</b>
+                      <ul style={{ margin: "6px 0 0 18px", padding: 0, lineHeight: 1.45 }}>
+                        {matchSummary.notes.map((note, idx) => (
+                          <li key={`${note}-${idx}`}>{note}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
