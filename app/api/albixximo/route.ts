@@ -1124,20 +1124,20 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
     let distacco = ""
 
     if (pos === 1) {
-      if (/^(?:\d+:)?\d{1,2}:\d{2}\.\d{3}$/.test(tempoCell)) tempoTotale = tempoCell
-      distacco = ""
-    } else {
-      if (tempoCell.startsWith("+")) {
-        distacco = tempoCell
-      } else if (/in\s+gara/i.test(tempoCell)) {
-        distacco = "BOX"
-      } else {
-        const giroMatch = tempoCell.match(/^(\d+)\s*giro/i) || tempoCell.match(/^(\d+)\s*giri/i)
-        if (giroMatch) distacco = `${giroMatch[1]}giro`
-        else if (/non\s+finito/i.test(tempoCell)) distacco = "DNF"
-        else distacco = tempoCell
-      }
-    }
+  if (/^(?:\d+:)?\d{1,2}:\d{2}\.\d{3}$/.test(tempoCell)) tempoTotale = tempoCell
+  distacco = ""
+} else {
+  if (tempoCell.startsWith("+")) {
+    distacco = tempoCell.replace(/\+\s*/g, "+").trim()
+  } else if (/in\s+gara/i.test(tempoCell)) {
+    distacco = "BOX"
+  } else {
+    const giroMatch = tempoCell.match(/^(\d+)\s*giro/i) || tempoCell.match(/^(\d+)\s*giri/i)
+    if (giroMatch) distacco = `${giroMatch[1]}giro`
+    else if (/non\s+finito/i.test(tempoCell)) distacco = "DNF"
+    else distacco = tempoCell
+  }
+}
 
     out.push({
       pos,
