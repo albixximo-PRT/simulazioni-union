@@ -78,13 +78,15 @@ function HeaderBadge({
 }: {
   label: string
   value: string
-  variant: "gold" | "violet"
+  variant: "gold" | "violet" | "silver"
   exporting?: boolean
 }) {
   const palette =
     variant === "gold"
       ? { border: "rgba(255,215,0,0.70)", glow: "rgba(255,215,0,0.16)" }
-      : { border: "rgba(160,90,255,0.70)", glow: "rgba(160,90,255,0.14)" }
+      : variant === "silver"
+        ? { border: "rgba(210,215,225,0.72)", glow: "rgba(210,215,225,0.18)" }
+        : { border: "rgba(160,90,255,0.70)", glow: "rgba(160,90,255,0.14)" }
 
   return (
     <div
@@ -101,14 +103,26 @@ function HeaderBadge({
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
-          padding: exporting ? "9px 14px" : "7px 11px",
+          padding: exporting
+            ? variant === "silver"
+              ? "10px 16px"
+              : "9px 14px"
+            : variant === "silver"
+              ? "8px 12px"
+              : "7px 11px",
           borderRadius: 999,
           border: `1px solid ${palette.border}`,
           background: "rgba(0,0,0,0.20)",
           boxShadow: `0 0 22px ${palette.glow}`,
           color: "white",
           fontWeight: 900,
-          fontSize: exporting ? 14 : 12,
+          fontSize: exporting
+            ? variant === "silver"
+              ? 15
+              : 14
+            : variant === "silver"
+              ? 13
+              : 12,
           letterSpacing: 0.6,
           textTransform: "uppercase",
           whiteSpace: "nowrap",
@@ -481,11 +495,13 @@ function AppHeader({
 }
 
 function SummaryStrip({
+  winnerPilot,
   ppPilot,
   gvPilot,
   unionMeta,
   exporting = false,
 }: {
+  winnerPilot: string
   ppPilot: string
   gvPilot: string
   unionMeta: UnionMeta
@@ -503,6 +519,7 @@ function SummaryStrip({
     >
       <div style={{ display: "flex", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
+          <HeaderBadge label="WINNER" value={winnerPilot} variant="silver" exporting={exporting} />
           <HeaderBadge label="PP" value={ppPilot} variant="gold" exporting={exporting} />
           <HeaderBadge label="GV" value={gvPilot} variant="violet" exporting={exporting} />
           <HeaderBadge label="GARA" value={unionMeta.gara} variant="gold" exporting={exporting} />
@@ -770,6 +787,11 @@ export default function Page() {
 
   const gvPilot = useMemo(() => {
     const row = rows.find((r) => (r.gv || "").trim().toUpperCase() === "GV")
+    return row?.nomePilota || ""
+  }, [rows])
+
+  const winnerPilot = useMemo(() => {
+    const row = rows.find((r) => r.posizione === 1) || rows[0]
     return row?.nomePilota || ""
   }, [rows])
 
@@ -1141,6 +1163,7 @@ export default function Page() {
           <div style={{ padding: 18, borderBottom: "1px solid rgba(255,255,255,0.10)" }}>
             <div style={{ display: "flex", justifyContent: "space-between", gap: 14, flexWrap: "wrap" }}>
               <div style={{ display: "flex", gap: 16, flexWrap: "wrap", alignItems: "center" }}>
+                <HeaderBadge label="WINNER" value={winnerPilot} variant="silver" />
                 <HeaderBadge label="PP" value={ppPilot} variant="gold" />
                 <HeaderBadge label="GV" value={gvPilot} variant="violet" />
                 <HeaderBadge label="GARA" value={unionMeta.gara} variant="gold" />
@@ -1675,6 +1698,7 @@ export default function Page() {
               />
 
               <SummaryStrip
+                winnerPilot={winnerPilot}
                 ppPilot={ppPilot}
                 gvPilot={gvPilot}
                 unionMeta={unionMeta}
