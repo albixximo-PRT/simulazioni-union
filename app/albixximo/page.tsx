@@ -701,6 +701,95 @@ function ResultsTable({
   )
 }
 
+function SplashScreen() {
+  return (
+    <div
+      style={{
+        position: "relative",
+        minHeight: "100vh",
+        padding: 24,
+        color: "white",
+        fontFamily: "ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial",
+        background:
+          "radial-gradient(1200px 600px at 15% 10%, rgba(255,215,0,0.14), transparent 50%)," +
+          "radial-gradient(900px 500px at 85% 20%, rgba(160,90,255,0.16), transparent 50%)," +
+          "linear-gradient(180deg, #0b0d12 0%, #07080c 100%)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          pointerEvents: "none",
+          background:
+            "radial-gradient(circle at center, rgba(40,80,255,0.18) 0%, rgba(160,90,255,0.14) 30%, rgba(255,215,0,0.08) 55%, transparent 75%)",
+          filter: "blur(30px)",
+        }}
+      />
+
+      <div
+        style={{
+          display: "grid",
+          placeItems: "center",
+          gap: 20,
+          animation: "unionSplashFade 5s ease forwards",
+          zIndex: 1,
+        }}
+      >
+        <div
+          style={{
+            position: "relative",
+            width: 260,
+            height: 260,
+            display: "grid",
+            placeItems: "center",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              borderRadius: "50%",
+              background:
+                "radial-gradient(circle, rgba(255,215,0,0.24) 0%, rgba(160,90,255,0.18) 38%, transparent 72%)",
+              filter: "blur(18px)",
+              animation: "unionSplashGlow 2.4s ease-in-out infinite",
+            }}
+          />
+
+          <img
+            src="/union_logo.png"
+            alt="Union"
+            style={{
+              width: 220,
+              height: "auto",
+              animation: "unionSplashSpin 5s linear forwards",
+              filter:
+                "drop-shadow(0 0 10px rgba(255,215,0,0.28)) drop-shadow(0 0 24px rgba(160,90,255,0.22))",
+            }}
+          />
+        </div>
+
+        <div
+          style={{
+            fontSize: 16,
+            fontWeight: 800,
+            letterSpacing: "0.16em",
+            textTransform: "uppercase",
+            color: "rgba(255,255,255,0.86)",
+          }}
+        >
+          Union Race Timing
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function Page() {
   const [files, setFiles] = useState<File[]>([])
   const [csv, setCsv] = useState("")
@@ -714,6 +803,8 @@ export default function Page() {
   const [showReq, setShowReq] = useState(false)
 
   const [authorized, setAuthorized] = useState(false)
+  const [authChecked, setAuthChecked] = useState(false)
+  const [showSplash, setShowSplash] = useState(true)
   const [inputPassword, setInputPassword] = useState("")
   const [loginError, setLoginError] = useState("")
   const [pulse, setPulse] = useState(0)
@@ -748,6 +839,14 @@ export default function Page() {
         setExportTextsDraft(DEFAULT_EXPORT_TEXTS)
       }
     }
+
+    setAuthChecked(true)
+
+    const splashTimer = setTimeout(() => {
+      setShowSplash(false)
+    }, 5000)
+
+    return () => clearTimeout(splashTimer)
   }, [])
 
   useEffect(() => {
@@ -777,6 +876,25 @@ export default function Page() {
         0% { left: -20%; }
         50% { left: 100%; }
         100% { left: -20%; }
+      }
+
+      @keyframes unionSplashSpin {
+        0% { transform: rotate(0deg) scale(0.92); }
+        50% { transform: rotate(180deg) scale(1); }
+        100% { transform: rotate(360deg) scale(0.92); }
+      }
+
+      @keyframes unionSplashGlow {
+        0% { opacity: 0.75; transform: scale(0.96); }
+        50% { opacity: 1; transform: scale(1.05); }
+        100% { opacity: 0.75; transform: scale(0.96); }
+      }
+
+      @keyframes unionSplashFade {
+        0% { opacity: 0; }
+        12% { opacity: 1; }
+        88% { opacity: 1; }
+        100% { opacity: 0; }
       }
     `
     document.head.appendChild(style)
@@ -934,8 +1052,12 @@ export default function Page() {
   }
 
   function resetAll() {
-  window.location.reload()
-}
+    window.location.reload()
+  }
+
+  if (!authChecked || showSplash) {
+    return <SplashScreen />
+  }
 
   if (!authorized) {
     return (
