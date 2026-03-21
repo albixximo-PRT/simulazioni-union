@@ -267,9 +267,10 @@ const KNOWN_CARS = [
   "Audi Vision Gran Turismo",
   "Volkswagen GTI Vision Gran Turismo Gr.3",
   "R18 '16",
-  "919 Hybrid '16",
-  "TS050 Hybrid '16",
-  "GR010 HYBRID '21",
+"919 Hybrid '16",
+"TS050 Hybrid '16",
+"GR010 HYBRID '21",
+  
 
   // PRT aggiunte
   "Cayman GT4 Clubsport '16",
@@ -388,15 +389,9 @@ function looksLikeKnownCarToken(s: string) {
     t.includes("vantage") ||
     t.includes("vision gran turismo") ||
     t.includes("tomahawk") ||
-    t.includes("lm55") ||
-    t.includes("r18") ||
-    t.includes("919") ||
-    t.includes("ts050") ||
-    t.includes("gr010") ||
-    t.includes("hybrid")
+    t.includes("lm55")
   )
 }
-
 function isDefinitelyCarTokenForNameFilter(s: string) {
   const t = normalizeCarLoose(s)
   if (!t) return false
@@ -434,16 +429,6 @@ function isDefinitelyCarTokenForNameFilter(s: string) {
     /\b4c\b/i.test(t) ||
     /\btomahawk\b/i.test(t) ||
     /\blm55\b/i.test(t)
-  ) {
-    return true
-  }
-
-  if (
-    /\br18\b/i.test(t) ||
-    /\b919\b/i.test(t) ||
-    /\bts050\b/i.test(t) ||
-    /\bgr010\b/i.test(t) ||
-    /\bhybrid\b/i.test(t)
   ) {
     return true
   }
@@ -669,18 +654,18 @@ function parseQualificaFromColumnText(rawText: string): QualiRow[] {
   let cursor = posBlock.end
 
   const isName = (s: string) => {
-    const t = String(s || "").trim()
+  const t = String(s || "").trim()
 
-    if (!t) return false
-    if (/^\d+$/.test(t)) return false
-    if (/^\+/.test(t)) return false
-    if (t.includes(":")) return false
-    if (/^[\-\.\s]+$/.test(t)) return false
-    if (/DISTACCO|MIGLIOR|GRAN|UNION|Dragon|Chiudi|Avanti|Alterna|Blue Moon|Speedway|Interno/i.test(t)) return false
-    if (isDefinitelyCarTokenForNameFilter(t)) return false
+  if (!t) return false
+  if (/^\d+$/.test(t)) return false
+  if (/^\+/.test(t)) return false
+  if (t.includes(":")) return false
+  if (/^[\-\.\s]+$/.test(t)) return false
+  if (/DISTACCO|MIGLIOR|GRAN|UNION|Dragon|Chiudi|Avanti|Alterna|Blue Moon|Speedway|Interno/i.test(t)) return false
+  if (isDefinitelyCarTokenForNameFilter(t)) return false
 
-    return /[A-Za-z]/.test(t)
-  }
+  return /[A-Za-z]/.test(t)
+}
 
   const names: string[] = []
   while (cursor < lines.length && names.length < count) {
@@ -993,12 +978,7 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
       t.includes("vantage") ||
       t.includes("vision gran turismo") ||
       t.includes("tomahawk") ||
-      t.includes("lm55") ||
-      t.includes("r18") ||
-      t.includes("919") ||
-      t.includes("ts050") ||
-      t.includes("gr010") ||
-      t.includes("hybrid")
+      t.includes("lm55")
     )
   }
 
@@ -1040,12 +1020,7 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
       t.includes("vantage") ||
       t.includes("vision") ||
       t.includes("tomahawk") ||
-      t.includes("lm55") ||
-      t.includes("r18") ||
-      t.includes("919") ||
-      t.includes("ts050") ||
-      t.includes("gr010") ||
-      t.includes("hybrid")
+      t.includes("lm55")
     )
   }
 
@@ -1053,10 +1028,10 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
   let currentParts: string[] = []
 
   const flush = () => {
-    const raw = cleanCar(currentParts.join(" "))
-    cars.push(raw)
-    currentParts = []
-  }
+  const raw = cleanCar(currentParts.join(" "))
+  cars.push(raw)
+  currentParts = []
+}
 
   for (let i = 0; i < carTokens.length; i++) {
     const tok = carTokens[i]
@@ -1084,15 +1059,15 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
   }
   if (currentParts.length) flush()
 
-  let carsFixed = [...cars]
+let carsFixed = [...cars]
 
-  if (carsFixed.length > n && carsFixed.length >= 2) {
-    const first = cleanCar(carsFixed[0] ?? "")
-    carsFixed = [first, ...carsFixed.slice(carsFixed.length - (n - 1))]
-  }
+if (carsFixed.length > n && carsFixed.length >= 2) {
+  const first = cleanCar(carsFixed[0] ?? "")
+  carsFixed = [first, ...carsFixed.slice(carsFixed.length - (n - 1))]
+}
 
-  while (carsFixed.length < n) carsFixed.push("")
-  if (carsFixed.length > n) carsFixed.length = n
+while (carsFixed.length < n) carsFixed.push("")
+if (carsFixed.length > n) carsFixed.length = n
 
   const tempoRaw = takeBlock(lines, idxTempo, /^(PENALITÀ|PENALITA|MIGLIOR\s+GIRO)$/i, n)
 
@@ -1107,17 +1082,11 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
   for (let i = 0; i < n; i++) {
     const pos = positions[i]
     const pilota = names[i] ?? ""
+    let auto = normalizeKnownCar(carsFixed[i] ?? "")
 
-    const autoRaw = cleanCar(carsFixed[i] ?? "")
-    let auto = normalizeKnownCar(autoRaw)
-
-    if (i === 0) {
-      const knownMatches = KNOWN_CARS.filter((known) => autoRaw.includes(known))
-      if (knownMatches.length >= 2) {
-        auto = pickFirstKnownCar(autoRaw)
-      }
-    }
-
+if (i === 0) {
+  auto = pickFirstKnownCar(carsFixed[i] ?? "")
+}
     const tempoCell = (tempoRaw[i] ?? "").trim()
 
     let tempoTotale = ""
@@ -1532,12 +1501,12 @@ export async function POST(req: NextRequest) {
         ""
 
       const auto = normalizeKnownCar(
-        (qExact?.auto || "").trim() ||
-        (qLoose?.auto || "").trim() ||
-        (qPos?.auto || "").trim() ||
-        (r.auto || "").trim() ||
-        ""
-      )
+  (qExact?.auto || "").trim() ||
+  (qLoose?.auto || "").trim() ||
+  (qPos?.auto || "").trim() ||
+  (r.auto || "").trim() ||
+  ""
+)
 
       const isPole =
         !!polePilot &&
