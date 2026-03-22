@@ -136,21 +136,27 @@ function overallBoxStyle(status: "ok" | "warn" | "error"): React.CSSProperties {
 function matchCellStyle(status: MatchFieldStatus): React.CSSProperties {
   if (status === "ok") {
     return {
-      background: "rgba(34,197,94,0.12)",
-      border: "1px solid rgba(34,197,94,0.30)",
+      background: "linear-gradient(180deg, rgba(0,255,120,0.18), rgba(0,0,0,0.25))",
+      border: "1px solid rgba(0,255,120,0.35)",
+      boxShadow: "0 0 12px rgba(0,255,120,0.18)",
+      color: "#ecfff5",
     }
   }
 
   if (status === "warn") {
     return {
-      background: "rgba(250,204,21,0.10)",
-      border: "1px solid rgba(250,204,21,0.28)",
+      background: "linear-gradient(180deg, rgba(255,215,0,0.18), rgba(0,0,0,0.25))",
+      border: "1px solid rgba(255,215,0,0.35)",
+      boxShadow: "0 0 12px rgba(255,215,0,0.16)",
+      color: "#fff8dc",
     }
   }
 
   return {
-    background: "rgba(239,68,68,0.12)",
-    border: "1px solid rgba(239,68,68,0.30)",
+    background: "linear-gradient(180deg, rgba(255,80,80,0.18), rgba(0,0,0,0.25))",
+    border: "1px solid rgba(255,80,80,0.35)",
+    boxShadow: "0 0 12px rgba(255,80,80,0.14)",
+    color: "#fff1f1",
   }
 }
 
@@ -1198,6 +1204,11 @@ export default function Page() {
         88% { opacity: 1; }
         100% { opacity: 0; }
       }
+
+      @keyframes unionGlowMove {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
     `
     document.head.appendChild(style)
 
@@ -1893,16 +1904,24 @@ export default function Page() {
             {rows.length > 0 && (
               <div
                 style={{
-                  borderRadius: 18,
-                  padding: 16,
+                  borderRadius: 16,
+                  padding: 12,
                   ...overallBoxStyle(matchSummary.overallStatus),
                   boxShadow: "0 10px 30px rgba(0,0,0,0.22)",
                   display: "grid",
-                  gap: 14,
+                  gap: 10,
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                  <div style={{ fontSize: 22, fontWeight: 900, letterSpacing: 0.2 }}>
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: 0.2 }}>
                     {matchSummary.overallStatus === "ok"
                       ? "✅ MATCH 100%"
                       : matchSummary.overallStatus === "warn"
@@ -1910,72 +1929,86 @@ export default function Page() {
                         : "❌ ERRORE REALE"}
                   </div>
 
-                  <div style={{ fontSize: 16, fontWeight: 900 }}>
+                  <div style={{ fontSize: 14, fontWeight: 900 }}>
                     Match esatto al {matchSummary.percentage}%
                   </div>
                 </div>
 
                 <div
                   style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
-                    gap: 10,
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    flexWrap: "nowrap",
+                    overflowX: "auto",
+                    padding: "8px 10px",
+                    borderRadius: 14,
+                    border: "1px solid rgba(255,255,255,0.10)",
+                    background: "rgba(0,0,0,0.20)",
+                    boxShadow: "0 0 24px rgba(255,215,0,0.06)",
                   }}
                 >
-                  <div style={{ borderRadius: 12, padding: "10px 12px", ...matchCellStyle(matchSummary.fields.posizione) }}>
-                    # {statusBadge(matchSummary.fields.posizione)}
-                  </div>
-                  <div style={{ borderRadius: 12, padding: "10px 12px", ...matchCellStyle(matchSummary.fields.nomePilota) }}>
-                    Nome pilota {statusBadge(matchSummary.fields.nomePilota)}
-                  </div>
-                  <div style={{ borderRadius: 12, padding: "10px 12px", ...matchCellStyle(matchSummary.fields.auto) }}>
-                    Auto {statusBadge(matchSummary.fields.auto)}
-                  </div>
-                  <div style={{ borderRadius: 12, padding: "10px 12px", ...matchCellStyle(matchSummary.fields.distacchi) }}>
-                    Distacchi {statusBadge(matchSummary.fields.distacchi)}
-                  </div>
-                  <div style={{ borderRadius: 12, padding: "10px 12px", ...matchCellStyle(matchSummary.fields.pp) }}>
-                    -PP- {statusBadge(matchSummary.fields.pp)}
-                  </div>
-                  <div style={{ borderRadius: 12, padding: "10px 12px", ...matchCellStyle(matchSummary.fields.gv) }}>
-                    -GV- {statusBadge(matchSummary.fields.gv)}
-                  </div>
-                  <div style={{ borderRadius: 12, padding: "10px 12px", ...matchCellStyle(matchSummary.fields.gara) }}>
-                    Gara {statusBadge(matchSummary.fields.gara)}
-                  </div>
-                  <div style={{ borderRadius: 12, padding: "10px 12px", ...matchCellStyle(matchSummary.fields.lobby) }}>
-                    Lobby {statusBadge(matchSummary.fields.lobby)}
-                  </div>
-                  <div style={{ borderRadius: 12, padding: "10px 12px", ...matchCellStyle(matchSummary.fields.lega) }}>
-                    Lega {statusBadge(matchSummary.fields.lega)}
-                  </div>
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      borderRadius: 14,
+                      background:
+                        "linear-gradient(90deg, transparent, rgba(255,215,0,0.18), transparent)",
+                      opacity: 0.35,
+                      animation: "unionGlowMove 4s linear infinite",
+                      pointerEvents: "none",
+                    }}
+                  />
+
+                  {[
+                    ["#", matchSummary.fields.posizione],
+                    ["Nome pilota", matchSummary.fields.nomePilota],
+                    ["Auto", matchSummary.fields.auto],
+                    ["Distacchi", matchSummary.fields.distacchi],
+                    ["-PP-", matchSummary.fields.pp],
+                    ["-GV-", matchSummary.fields.gv],
+                    ["Gara", matchSummary.fields.gara],
+                    ["Lobby", matchSummary.fields.lobby],
+                    ["Lega", matchSummary.fields.lega],
+                  ].map(([label, status]) => (
+                    <div
+                      key={String(label)}
+                      style={{
+                        position: "relative",
+                        zIndex: 1,
+                        borderRadius: 10,
+                        padding: "6px 10px",
+                        fontSize: 11,
+                        fontWeight: 800,
+                        letterSpacing: 0.3,
+                        whiteSpace: "nowrap",
+                        backdropFilter: "blur(6px)",
+                        ...matchCellStyle(status as MatchFieldStatus),
+                      }}
+                    >
+                      {label} {statusBadge(status as MatchFieldStatus)}
+                    </div>
+                  ))}
                 </div>
 
-                <div
-                  style={{
-                    display: "grid",
-                    gap: 6,
-                    fontSize: 12,
-                    opacity: 0.92,
-                  }}
-                >
-                  <div>
-                    <b>PP rilevata:</b> {detectedPoleDriver || "-"}
+                {matchSummary.notes.length > 0 && (
+                  <div
+                    style={{
+                      fontSize: 11,
+                      opacity: 0.9,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    <b>Note:</b>
+                    <ul style={{ margin: "6px 0 0 18px", padding: 0 }}>
+                      {matchSummary.notes.map((note, idx) => (
+                        <li key={`${note}-${idx}`}>{note}</li>
+                      ))}
+                    </ul>
                   </div>
-                  <div>
-                    <b>GV rilevato:</b> {detectedBestLapDriver || "-"}
-                  </div>
-                  {matchSummary.notes.length > 0 && (
-                    <div style={{ marginTop: 4 }}>
-                      <b>Note:</b>
-                      <ul style={{ margin: "6px 0 0 18px", padding: 0, lineHeight: 1.45 }}>
-                        {matchSummary.notes.map((note, idx) => (
-                          <li key={`${note}-${idx}`}>{note}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                </div>
+                )}
               </div>
             )}
 
