@@ -101,6 +101,67 @@ function sameCarForMatch(a: string, b: string) {
   return aa === bb
 }
 
+function isClearlySuspiciousCar(value: string): boolean {
+  const raw = String(value || "").trim()
+  if (!raw) return true
+
+  const v = raw
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[''`´’‘]/g, "")
+    .replace(/[‐-–—]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim()
+
+  if (!v) return true
+
+  if (/^\d+$/.test(v)) return true
+  if (!/[a-z]/i.test(v)) return true
+  if (v.length < 4) return true
+
+  const plausibleTokens: string[] = [
+    "hybrid",
+    "vision",
+    "gr.4",
+    "gr4",
+    "gt3",
+    "gt4",
+    "lms",
+    "r18",
+    "919",
+    "ts050",
+    "gr010",
+    "amg",
+    "supra",
+    "nsx",
+    "hurac",
+    "vantage",
+    "gt-r",
+    "gtr",
+    "mazda",
+    "silvia",
+    "elantra",
+    "cayman",
+    "megane",
+    "italia",
+    "clubsport",
+    "trophy",
+    "touring car",
+    "911",
+    "r8",
+    "4c",
+  ]
+
+  const hasPlausibleToken = plausibleTokens.some((token) => v.includes(token))
+  if (hasPlausibleToken) return false
+
+  if (/\(\d{3}\)/.test(raw)) return false
+  if (/'\d{2}\b/.test(raw)) return false
+
+  return true
+}
+
 function isUnionDistaccoValid(value: string, posizione: number) {
   const v = String(value || "").trim()
   if (!v) return posizione === 1 ? false : true
@@ -241,27 +302,24 @@ function buildUnionMatchSummary({
   }
 
   for (const row of rows) {
-    if (!String(row.auto || "").trim()) {
-      auto = "error"
-      notes.push("Presente almeno un'auto vuota.")
+  if (!String(row.auto || "").trim()) {
+    auto = "error"
+    notes.push("Presente almeno un'auto vuota.")
+    break
+  }
+}
+
+if (auto !== "error") {
+  for (let i = 0; i < rows.length; i++) {
+    const csvCar = rows[i]?.auto || ""
+
+    if (isClearlySuspiciousCar(csvCar)) {
+      auto = "warn"
+      notes.push(`Possibile auto anomala in posizione ${i + 1}.`)
       break
     }
   }
-
-  if (auto !== "error" && detectedRaceCars.length) {
-    for (let i = 0; i < Math.min(rows.length, detectedRaceCars.length); i++) {
-      const csvCar = rows[i]?.auto || ""
-      const screenCar = detectedRaceCars[i] || ""
-
-      if (!screenCar.trim()) continue
-
-      if (!sameCarForMatch(csvCar, screenCar)) {
-        auto = "warn"
-        notes.push(`Possibile auto non coerente in posizione ${i + 1}.`)
-        break
-      }
-    }
-  }
+}
 
   for (const row of rows) {
     if (!isUnionDistaccoValid(row.distacchi, row.posizione)) {
