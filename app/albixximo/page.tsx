@@ -2748,23 +2748,29 @@ export default function Page() {
               </div>
             )}
 
-            {displayRows.length > 0 && (
-              <div
-                style={{
-                  borderRadius: 16,
-                  border: "1px solid rgba(255,255,255,0.10)",
-                  background: "rgba(0,0,0,0.18)",
-                  padding: 14,
-                  display: "grid",
-                  gap: 12,
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-                  <div style={{ fontWeight: 900, opacity: 0.96 }}>Direzione Gara</div>
-                  <div style={{ fontSize: 12, opacity: 0.78 }}>
-                    P e S modificano entrambi la classifica. DSQ manda il pilota in fondo.
-                  </div>
-                </div>
+            {/* TABELLONA RISULTATI SUBITO DOPO ESTRAZIONE */}
+{showTable && finalRows.length > 0 && (
+  <ResultsTable previewRows={finalRows} />
+)}
+
+{/* DIREZIONE GARA DOPO LA TABELLA */}
+{displayRows.length > 0 && (
+  <div
+    style={{
+      borderRadius: 16,
+      border: "1px solid rgba(255,255,255,0.10)",
+      background: "rgba(0,0,0,0.18)",
+      padding: 14,
+      display: "grid",
+      gap: 12,
+    }}
+  >
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+      <div style={{ fontWeight: 900, opacity: 0.96 }}>Direzione Gara</div>
+      <div style={{ fontSize: 12, opacity: 0.78 }}>
+        P e S modificano entrambi la classifica. DSQ manda il pilota in fondo.
+      </div>
+    </div>
 
                 <div
                   style={{
