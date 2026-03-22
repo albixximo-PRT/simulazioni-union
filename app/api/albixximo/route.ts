@@ -1109,7 +1109,13 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
     const pilota = names[i] ?? ""
 
     const autoRaw = cleanCar(carsFixed[i] ?? "")
-    let auto = normalizeKnownCar(autoRaw)
+
+const isGarbageAuto =
+  /^\d+$/.test(autoRaw) ||
+  autoRaw.length < 5 ||
+  !/[a-z]/i.test(autoRaw)
+
+let auto = isGarbageAuto ? "" : normalizeKnownCar(autoRaw)
 
     if (i === 0) {
       const knownMatches = KNOWN_CARS.filter((known) => autoRaw.includes(known))
