@@ -128,9 +128,9 @@ function overallBoxStyle(status: "ok" | "warn" | "error"): React.CSSProperties {
 
   return {
     background: "rgba(239,68,68,0.14)",
-    border: "1px solid rgba(239,68,68,0.45)",
-    color: "#fee2e2",
-  }
+      border: "1px solid rgba(239,68,68,0.45)",
+      color: "#fee2e2",
+    }
 }
 
 function matchCellStyle(status: MatchFieldStatus): React.CSSProperties {
@@ -881,7 +881,7 @@ function ResultsTable({
         <table
           style={{
             width: "100%",
-            minWidth: exporting ? 1660 : 1320,
+            minWidth: exporting ? 1600 : 1240,
             borderCollapse: "collapse",
             tableLayout: "fixed",
           }}
@@ -899,13 +899,13 @@ function ResultsTable({
               <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: 70 }}>
                 #
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 260 : 220 }}>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 240 : 200 }}>
                 Nome pilota
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 430 : undefined }}>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 340 : 300 }}>
                 Auto
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "right", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 210 : 170 }}>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "right", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 180 : 150 }}>
                 Distacchi
               </th>
               <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 110 : 90 }}>
@@ -920,7 +920,7 @@ function ResultsTable({
               <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 110 : 90 }}>
                 Lobby
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 150 : 120 }}>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 170 : 140 }}>
                 Lega
               </th>
             </tr>
@@ -992,7 +992,16 @@ function ResultsTable({
                     {r.lobby || "-"}
                   </TableCell>
 
-                  <TableCell exporting={exporting} align="center" mono dim={!r.lega}>
+                  <TableCell
+                    exporting={exporting}
+                    align="center"
+                    mono
+                    dim={!r.lega}
+                    style={{
+                      whiteSpace: "nowrap",
+                      fontSize: exporting ? 15 : 12,
+                    }}
+                  >
                     {r.lega || "-"}
                   </TableCell>
                 </tr>
@@ -1937,12 +1946,11 @@ export default function Page() {
                 <div
                   style={{
                     position: "relative",
-                    display: "flex",
-                    alignItems: "center",
+                    display: "grid",
+                    gridTemplateColumns: "repeat(9, minmax(0, 1fr))",
                     gap: 8,
-                    flexWrap: "nowrap",
-                    overflowX: "auto",
                     padding: "8px 10px",
+                    overflow: "hidden",
                     borderRadius: 14,
                     border: "1px solid rgba(255,255,255,0.10)",
                     background: "rgba(0,0,0,0.20)",
@@ -1979,11 +1987,15 @@ export default function Page() {
                         position: "relative",
                         zIndex: 1,
                         borderRadius: 10,
-                        padding: "6px 10px",
-                        fontSize: 11,
+                        padding: "8px 10px",
+                        fontSize: 12,
                         fontWeight: 800,
                         letterSpacing: 0.3,
                         whiteSpace: "nowrap",
+                        textAlign: "center",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
                         backdropFilter: "blur(6px)",
                         ...matchCellStyle(status as MatchFieldStatus),
                       }}
