@@ -376,7 +376,7 @@ function buildUnionMatchSummary({
 
     if (uniqueGara.size === 1 && uniqueGara.has("18")) {
       gara = "warn"
-      notes.push("Numero gara non rilevato dagli screen (valore default 18). Controlla o inserisci manualmente.")
+      notes.push("⚠️ Numero gara non rilevato dagli screen (–). Inserisci manualmente.")
     }
   }
 
@@ -1065,9 +1065,25 @@ function ResultsTable({
                     {isGv ? <Pill left="GV" variant="violet" exporting={exporting} /> : "-"}
                   </TableCell>
 
-                  <TableCell exporting={exporting} align="center" mono dim={!r.gara}>
-                    {r.gara || "-"}
-                  </TableCell>
+                  <TableCell
+  exporting={exporting}
+  align="center"
+  mono
+  dim={!r.gara}
+  style={
+    String(r.gara).trim() === "-"
+      ? {
+          background: "linear-gradient(180deg, rgba(255,165,0,0.18), rgba(0,0,0,0.25))",
+          border: "1px solid rgba(255,165,0,0.35)",
+          boxShadow: "0 0 12px rgba(255,165,0,0.16)",
+          color: "#fff3e0",
+          fontWeight: 900,
+        }
+      : undefined
+  }
+>
+  {r.gara || "-"}
+</TableCell>
 
                   <TableCell exporting={exporting} align="center" mono dim={!r.lobby}>
                     {r.lobby || "-"}
@@ -1541,7 +1557,7 @@ export default function Page() {
         setUnionMeta(
           data.unionMeta && typeof data.unionMeta === "object"
             ? {
-                gara: data.unionMeta.gara || "",
+                gara: data.unionMeta.gara && String(data.unionMeta.gara).trim() !== "" ? data.unionMeta.gara : "-",
                 lobby: data.unionMeta.lobby || "",
                 lega: data.unionMeta.lega || "",
               }
