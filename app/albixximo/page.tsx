@@ -85,6 +85,22 @@ function normalizeSimpleValue(value: string) {
   return String(value || "").trim().toLowerCase()
 }
 
+function normalizeCarForMatch(value: string) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/[''`´’‘]/g, "")
+    .replace(/[‐-–—]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+function sameCarForMatch(a: string, b: string) {
+  const aa = normalizeCarForMatch(a)
+  const bb = normalizeCarForMatch(b)
+  if (!aa || !bb) return false
+  return aa === bb
+}
+
 function isUnionDistaccoValid(value: string, posizione: number) {
   const v = String(value || "").trim()
   if (!v) return posizione === 1 ? false : true
@@ -128,9 +144,9 @@ function overallBoxStyle(status: "ok" | "warn" | "error"): React.CSSProperties {
 
   return {
     background: "rgba(239,68,68,0.14)",
-      border: "1px solid rgba(239,68,68,0.45)",
-      color: "#fee2e2",
-    }
+    border: "1px solid rgba(239,68,68,0.45)",
+    color: "#fee2e2",
+  }
 }
 
 function matchCellStyle(status: MatchFieldStatus): React.CSSProperties {
@@ -166,12 +182,14 @@ function buildUnionMatchSummary({
   detectedPoleDriver,
   detectedBestLapDriver,
   detectedRaceOrder,
+  detectedRaceCars,
 }: {
   rows: UnionRow[]
   unionMeta: UnionMeta
   detectedPoleDriver: string
   detectedBestLapDriver: string
   detectedRaceOrder: string[]
+  detectedRaceCars: string[]
 }): MatchSummary {
   const notes: string[] = []
 
@@ -227,6 +245,21 @@ function buildUnionMatchSummary({
       auto = "error"
       notes.push("Presente almeno un'auto vuota.")
       break
+    }
+  }
+
+  if (auto !== "error" && detectedRaceCars.length) {
+    for (let i = 0; i < Math.min(rows.length, detectedRaceCars.length); i++) {
+      const csvCar = rows[i]?.auto || ""
+      const screenCar = detectedRaceCars[i] || ""
+
+      if (!screenCar.trim()) continue
+
+      if (!sameCarForMatch(csvCar, screenCar)) {
+        auto = "warn"
+        notes.push(`Possibile auto non coerente in posizione ${i + 1}.`)
+        break
+      }
     }
   }
 
@@ -1130,6 +1163,7 @@ export default function Page() {
   const [detectedPoleDriver, setDetectedPoleDriver] = useState("")
   const [detectedBestLapDriver, setDetectedBestLapDriver] = useState("")
   const [detectedRaceOrder, setDetectedRaceOrder] = useState<string[]>([])
+  const [detectedRaceCars, setDetectedRaceCars] = useState<string[]>([])
 
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const exportRef = useRef<HTMLDivElement | null>(null)
@@ -1250,8 +1284,9 @@ export default function Page() {
       detectedPoleDriver,
       detectedBestLapDriver,
       detectedRaceOrder,
+      detectedRaceCars,
     })
-  }, [rows, unionMeta, detectedPoleDriver, detectedBestLapDriver, detectedRaceOrder])
+  }, [rows, unionMeta, detectedPoleDriver, detectedBestLapDriver, detectedRaceOrder, detectedRaceCars])
 
   function handleLogin() {
     if (inputPassword === APP_PASSWORD) {
@@ -1276,6 +1311,7 @@ export default function Page() {
     setDetectedPoleDriver("")
     setDetectedBestLapDriver("")
     setDetectedRaceOrder([])
+    setDetectedRaceCars([])
     setLoading(false)
     setExporting(false)
     setError("")
@@ -1355,6 +1391,7 @@ export default function Page() {
     setDetectedPoleDriver("")
     setDetectedBestLapDriver("")
     setDetectedRaceOrder([])
+    setDetectedRaceCars([])
 
     try {
       const fd = new FormData()
@@ -1371,6 +1408,7 @@ export default function Page() {
         setDetectedPoleDriver(data.detectedPoleDriver || "")
         setDetectedBestLapDriver(data.detectedBestLapDriver || "")
         setDetectedRaceOrder(Array.isArray(data.detectedRaceOrder) ? data.detectedRaceOrder : [])
+        setDetectedRaceCars(Array.isArray(data.detectedRaceCars) ? data.detectedRaceCars : [])
         setUnionMeta(
           data.unionMeta && typeof data.unionMeta === "object"
             ? {
