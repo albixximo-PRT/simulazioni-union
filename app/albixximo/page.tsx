@@ -909,23 +909,75 @@ function renderDGCell(
     )
   }
 
-  const color = kind === "P" ? "#ff5f5f" : "#ff4fd8"
+  const timeColor = kind === "P" ? "#ff3b3b" : "#ff2bd6"
+  const pillBg = kind === "P" ? "rgba(255,59,59,0.92)" : "rgba(255,43,214,0.92)"
+  const pillBorder = kind === "P" ? "1px solid rgba(255,59,59,0.55)" : "1px solid rgba(255,43,214,0.55)"
+  const pillShadow = kind === "P" ? "0 0 14px rgba(255,59,59,0.18)" : "0 0 14px rgba(255,43,214,0.18)"
+
+  const safe = Math.max(0, Math.round(seconds || 0))
+  const minutes = Math.floor(safe / 60)
+  const secs = safe % 60
+  const formatted = `+${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}.000`
 
   return (
     <span
       style={{
         display: "inline-flex",
         alignItems: "center",
-        gap: 6,
+        justifyContent: "center",
+        gap: exporting ? 8 : 7,
         whiteSpace: "nowrap",
-        fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-        fontSize: exporting ? 12 : 11,
-        fontWeight: 900,
         lineHeight: 1,
-        color,
       }}
     >
-      <span>{formatDGLabel(seconds || 0, kind)}</span>
+      <span
+        style={{
+          color: timeColor,
+          fontWeight: 900,
+          fontSize: exporting ? 15 : 14,
+          fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+          letterSpacing: 0.1,
+          textShadow:
+            kind === "P"
+              ? "0 0 10px rgba(255,59,59,0.20)"
+              : "0 0 10px rgba(255,43,214,0.18)",
+        }}
+      >
+        {formatted}
+      </span>
+
+      <span
+        style={{
+          color: "rgba(255,255,255,0.92)",
+          fontWeight: 800,
+          fontSize: exporting ? 13 : 12,
+          lineHeight: 1,
+        }}
+      >
+        |
+      </span>
+
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minWidth: exporting ? 20 : 18,
+          height: exporting ? 18 : 16,
+          padding: exporting ? "0 7px" : "0 6px",
+          borderRadius: 999,
+          background: pillBg,
+          border: pillBorder,
+          boxShadow: pillShadow,
+          color: "rgba(0,0,0,0.92)",
+          fontWeight: 900,
+          fontSize: exporting ? 11 : 10,
+          lineHeight: 1,
+          textTransform: "uppercase",
+        }}
+      >
+        {kind}
+      </span>
     </span>
   )
 }
@@ -2802,8 +2854,11 @@ export default function Page() {
                           Segnalazioni
                         </th>
                         <th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.82, width: "20%" }}>
-                          Gap finale doppiato
-                        </th>
+  Gap finale doppiato
+</th>
+<th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.82, width: "6%" }}>
+  X
+</th>
                       </tr>
                     </thead>
 
@@ -2959,46 +3014,83 @@ export default function Page() {
                             </TableCell>
 
                             <TableCell align="center">
-                              {isDoppiato ? (
-                                <div style={{ display: "grid", gap: 6, justifyItems: "center" }}>
-                                  <input
-                                    value={manualGap}
-                                    onChange={(e) =>
-                                      setDgLapOverrides((prev) => ({
-                                        ...prev,
-                                        [key]: e.target.value,
-                                      }))
-                                    }
-                                    placeholder="1:14.960"
-                                    style={{
-                                      width: 120,
-                                      padding: "8px 10px",
-                                      borderRadius: 10,
-                                      border: "1px solid rgba(255,255,255,0.14)",
-                                      background: "rgba(0,0,0,0.26)",
-                                      color: "white",
-                                      textAlign: "center",
-                                      fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                                    }}
-                                  />
-                                  <div
-                                    style={{
-                                      fontSize: 11,
-                                      opacity: manualGapValid ? 0.65 : 1,
-                                      color: manualGapValid ? "rgba(255,255,255,0.65)" : "#ff8a8a",
-                                    }}
-                                  >
-                                    {manualGap.trim()
-                                      ? manualGapValid
-                                        ? "Gap valido"
-                                        : "Usa m:ss.mmm"
-                                      : "Inserisci gap finale"}
-                                  </div>
-                                </div>
-                              ) : (
-                                "-"
-                              )}
-                            </TableCell>
+  {isDoppiato ? (
+    <div style={{ display: "grid", gap: 6, justifyItems: "center" }}>
+      <input
+        value={manualGap}
+        onChange={(e) =>
+          setDgLapOverrides((prev) => ({
+            ...prev,
+            [key]: e.target.value,
+          }))
+        }
+        placeholder="1:14.960"
+        style={{
+          width: 120,
+          padding: "8px 10px",
+          borderRadius: 10,
+          border: "1px solid rgba(255,255,255,0.14)",
+          background: "rgba(0,0,0,0.26)",
+          color: "white",
+          textAlign: "center",
+          fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+        }}
+      />
+      <div
+        style={{
+          fontSize: 11,
+          opacity: manualGapValid ? 0.65 : 1,
+          color: manualGapValid ? "rgba(255,255,255,0.65)" : "#ff8a8a",
+        }}
+      >
+        {manualGap.trim()
+          ? manualGapValid
+            ? "Gap valido"
+            : "Usa m:ss.mmm"
+          : "Inserisci gap finale"}
+      </div>
+    </div>
+  ) : (
+    "-"
+  )}
+</TableCell>
+
+<TableCell align="center">
+  <button
+    onClick={() => {
+      setDgKinds((prev) => {
+        const next = { ...prev }
+        delete next[key]
+        return next
+      })
+      setDgSeconds((prev) => {
+        const next = { ...prev }
+        delete next[key]
+        return next
+      })
+      setDgLapOverrides((prev) => {
+        const next = { ...prev }
+        delete next[key]
+        return next
+      })
+    }}
+    style={{
+      width: 34,
+      height: 34,
+      borderRadius: 10,
+      border: "1px solid rgba(255,255,255,0.14)",
+      background: "rgba(255,255,255,0.06)",
+      color: "white",
+      cursor: "pointer",
+      fontWeight: 900,
+      fontSize: 16,
+      lineHeight: 1,
+    }}
+    title="Reset DG"
+  >
+    ×
+  </button>
+</TableCell>
                           </tr>
                         )
                       })}
