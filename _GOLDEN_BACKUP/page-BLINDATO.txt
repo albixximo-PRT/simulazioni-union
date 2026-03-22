@@ -31,6 +31,25 @@ type ExportTexts = {
   subtitle: string
 }
 
+type MatchFieldStatus = "ok" | "warn" | "error"
+
+type MatchSummary = {
+  overallStatus: "ok" | "warn" | "error"
+  percentage: number
+  fields: {
+    posizione: MatchFieldStatus
+    nomePilota: MatchFieldStatus
+    auto: MatchFieldStatus
+    distacchi: MatchFieldStatus
+    pp: MatchFieldStatus
+    gv: MatchFieldStatus
+    gara: MatchFieldStatus
+    lobby: MatchFieldStatus
+    lega: MatchFieldStatus
+  }
+  notes: string[]
+}
+
 const DEFAULT_EXPORT_TEXTS: ExportTexts = {
   mainTitle: "ALBIXXIMO UNION TOOLS",
   sideLabel: "UNION CSV EXTRACTOR",
@@ -42,6 +61,375 @@ function formatLobbyShort(lobby: string) {
   const match = raw.match(/^A0*(\d+)$/i)
   if (match) return `A${Number(match[1])}`
   return raw || "union"
+}
+
+function normalizeMatchName(name: string) {
+  return String(name || "")
+    .toLowerCase()
+    .replace(/__/g, "_")
+    .replace(/_/g, " ")
+    .replace(/[@#'"`´’‘.,\-]+/g, " ")
+    .replace(/[^a-z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+}
+
+function sameDriverForMatch(a: string, b: string) {
+  const aa = normalizeMatchName(a)
+  const bb = normalizeMatchName(b)
+  if (!aa || !bb) return false
+  return aa === bb
+}
+
+function normalizeSimpleValue(value: string) {
+  return String(value || "").trim().toLowerCase()
+}
+
+function isClearlySuspiciousCar(value: string): boolean {
+  const raw = String(value || "").trim()
+  if (!raw) return true
+
+  const v = raw
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[''`´’‘]/g, "")
+    .replace(/[‐-–—]/g, "-")
+    .replace(/\s+/g, " ")
+    .trim()
+
+  if (!v) return true
+  if (/^\d+$/.test(v)) return true
+  if (!/[a-z]/i.test(v)) return true
+  if (v.length < 4) return true
+
+  const plausibleTokens: string[] = [
+    "hybrid",
+    "vision",
+    "gr.4",
+    "gr4",
+    "gt3",
+    "gt4",
+    "lms",
+    "r18",
+    "919",
+    "ts050",
+    "gr010",
+    "amg",
+    "supra",
+    "nsx",
+    "hurac",
+    "vantage",
+    "gt-r",
+    "gtr",
+    "mazda",
+    "silvia",
+    "elantra",
+    "cayman",
+    "megane",
+    "italia",
+    "clubsport",
+    "trophy",
+    "touring car",
+    "911",
+    "r8",
+    "4c",
+  ]
+
+  const hasPlausibleToken = plausibleTokens.some((token) => v.includes(token))
+  if (hasPlausibleToken) return false
+
+  if (/\(\d{3}\)/.test(raw)) return false
+  if (/'\d{2}\b/.test(raw)) return false
+
+  return true
+}
+
+function isUnionDistaccoValid(value: string, posizione: number) {
+  const v = String(value || "").trim()
+  if (!v) return posizione === 1 ? false : true
+
+  if (posizione === 1) {
+    return /^(?:\d+:)?\d{1,2}:\d{2}\.\d{3}$/.test(v)
+  }
+
+  if (v.toUpperCase() === "BOX") return true
+  if (v.toUpperCase() === "DNF") return true
+  if (v.toUpperCase() === "DOPPIATO") return true
+  if (/^\+\d+\.\d{3}$/.test(v)) return true
+  if (/^\+\d+:\d{2}\.\d{3}$/.test(v)) return true
+  if (/^(?:\d+:)?\d{1,2}:\d{2}\.\d{3}$/.test(v)) return true
+
+  return false
+}
+
+function statusBadge(status: MatchFieldStatus) {
+  if (status === "ok") return "✅"
+  if (status === "warn") return "⚠️"
+  return "❌"
+}
+
+function overallBoxStyle(status: "ok" | "warn" | "error"): React.CSSProperties {
+  if (status === "ok") {
+    return {
+      background: "rgba(34,197,94,0.14)",
+      border: "1px solid rgba(34,197,94,0.45)",
+      color: "#dcfce7",
+    }
+  }
+
+  if (status === "warn") {
+    return {
+      background: "rgba(250,204,21,0.12)",
+      border: "1px solid rgba(250,204,21,0.45)",
+      color: "#fef3c7",
+    }
+  }
+
+  return {
+    background: "rgba(239,68,68,0.14)",
+    border: "1px solid rgba(239,68,68,0.45)",
+    color: "#fee2e2",
+  }
+}
+
+function matchCellStyle(status: MatchFieldStatus): React.CSSProperties {
+  if (status === "ok") {
+    return {
+      background: "linear-gradient(180deg, rgba(0,255,120,0.18), rgba(0,0,0,0.25))",
+      border: "1px solid rgba(0,255,120,0.35)",
+      boxShadow: "0 0 12px rgba(0,255,120,0.18)",
+      color: "#ecfff5",
+    }
+  }
+
+  if (status === "warn") {
+    return {
+      background: "linear-gradient(180deg, rgba(255,215,0,0.18), rgba(0,0,0,0.25))",
+      border: "1px solid rgba(255,215,0,0.35)",
+      boxShadow: "0 0 12px rgba(255,215,0,0.16)",
+      color: "#fff8dc",
+    }
+  }
+
+  return {
+    background: "linear-gradient(180deg, rgba(255,80,80,0.18), rgba(0,0,0,0.25))",
+    border: "1px solid rgba(255,80,80,0.35)",
+    boxShadow: "0 0 12px rgba(255,80,80,0.14)",
+    color: "#fff1f1",
+  }
+}
+
+function buildUnionMatchSummary({
+  rows,
+  unionMeta,
+  detectedPoleDriver,
+  detectedBestLapDriver,
+  detectedRaceOrder,
+}: {
+  rows: UnionRow[]
+  unionMeta: UnionMeta
+  detectedPoleDriver: string
+  detectedBestLapDriver: string
+  detectedRaceOrder: string[]
+}): MatchSummary {
+  const notes: string[] = []
+
+  let posizione: MatchFieldStatus = "ok"
+  let nomePilota: MatchFieldStatus = "ok"
+  let auto: MatchFieldStatus = "ok"
+  let distacchi: MatchFieldStatus = "ok"
+  let pp: MatchFieldStatus = "ok"
+  let gv: MatchFieldStatus = "ok"
+  let gara: MatchFieldStatus = "ok"
+  let lobby: MatchFieldStatus = "ok"
+  let lega: MatchFieldStatus = "ok"
+
+  if (!rows.length) {
+    return {
+      overallStatus: "warn",
+      percentage: 0,
+      fields: {
+        posizione: "warn",
+        nomePilota: "warn",
+        auto: "warn",
+        distacchi: "warn",
+        pp: "warn",
+        gv: "warn",
+        gara: "warn",
+        lobby: "warn",
+        lega: "warn",
+      },
+      notes: ["Nessun dato da verificare."],
+    }
+  }
+
+  const sortedRows = [...rows].sort((a, b) => a.posizione - b.posizione)
+
+  for (let i = 0; i < sortedRows.length; i++) {
+    if (sortedRows[i].posizione !== i + 1) {
+      posizione = "error"
+      notes.push("Ordine posizioni non consecutivo.")
+      break
+    }
+  }
+
+  for (const row of rows) {
+    if (!String(row.nomePilota || "").trim()) {
+      nomePilota = "error"
+      notes.push("Presente almeno un nome pilota vuoto.")
+      break
+    }
+  }
+
+  for (const row of rows) {
+    if (!String(row.auto || "").trim()) {
+      auto = "error"
+      notes.push("Presente almeno un'auto vuota.")
+      break
+    }
+  }
+
+  if (auto !== "error") {
+    for (let i = 0; i < rows.length; i++) {
+      const csvCar = rows[i]?.auto || ""
+      if (isClearlySuspiciousCar(csvCar)) {
+        auto = "warn"
+        notes.push(`Possibile auto anomala in posizione ${i + 1}.`)
+        break
+      }
+    }
+  }
+
+  for (const row of rows) {
+    if (!isUnionDistaccoValid(row.distacchi, row.posizione)) {
+      distacchi = "warn"
+      notes.push("Almeno un distacco ha formato non standard UNION.")
+      break
+    }
+  }
+
+  const csvPoleRow = rows.find((r) => String(r.pp || "").trim().toUpperCase() === "PP")
+  const csvGvRow = rows.find((r) => String(r.gv || "").trim().toUpperCase() === "GV")
+
+  if (detectedPoleDriver) {
+    if (!csvPoleRow) {
+      pp = "error"
+      notes.push("PP non presente nel CSV.")
+    } else if (!sameDriverForMatch(csvPoleRow.nomePilota, detectedPoleDriver)) {
+      pp = "error"
+      notes.push("PP non coerente con la qualifica.")
+    }
+  } else if (!csvPoleRow) {
+    pp = "warn"
+    notes.push("PP non verificabile automaticamente.")
+  }
+
+  if (detectedBestLapDriver) {
+    if (!csvGvRow) {
+      gv = "error"
+      notes.push("GV non presente nel CSV.")
+    } else if (!sameDriverForMatch(csvGvRow.nomePilota, detectedBestLapDriver)) {
+      gv = "error"
+      notes.push("GV non coerente con la gara.")
+    }
+  } else if (!csvGvRow) {
+    gv = "warn"
+    notes.push("GV non verificabile automaticamente.")
+  }
+
+  if (detectedRaceOrder.length) {
+    for (let i = 0; i < Math.min(rows.length, detectedRaceOrder.length); i++) {
+      if (!sameDriverForMatch(rows[i].nomePilota, detectedRaceOrder[i])) {
+        nomePilota = "warn"
+        notes.push(`Possibile differenza nomi/ordine in posizione ${i + 1}.`)
+        break
+      }
+    }
+  }
+
+  const garaValues = new Set(rows.map((r) => normalizeSimpleValue(r.gara)))
+  const lobbyValues = new Set(rows.map((r) => normalizeSimpleValue(r.lobby)))
+  const legaValues = new Set(rows.map((r) => normalizeSimpleValue(r.lega)))
+
+  if (garaValues.size > 1) {
+    gara = "error"
+    notes.push("Valore Gara non uniforme.")
+  }
+  if (lobbyValues.size > 1) {
+    lobby = "error"
+    notes.push("Valore Lobby non uniforme.")
+  }
+  if (legaValues.size > 1) {
+    lega = "error"
+    notes.push("Valore Lega non uniforme.")
+  }
+
+  if (unionMeta.gara && normalizeSimpleValue(rows[0]?.gara) !== normalizeSimpleValue(unionMeta.gara)) {
+    gara = "error"
+    notes.push("Gara diversa dal meta rilevato.")
+  }
+
+  if (gara !== "error") {
+  const allGaraValues = rows.map((r) => String(r.gara || "").trim())
+  const uniqueGara = new Set(allGaraValues)
+
+  if (
+    uniqueGara.size === 1 &&
+    (uniqueGara.has("18") || uniqueGara.has("-") || uniqueGara.has(""))
+  ) {
+    gara = "warn"
+    notes.push("Numero gara non rilevato dagli screen (–). Inserisci manualmente.")
+  }
+}
+
+  if (unionMeta.lobby && normalizeSimpleValue(rows[0]?.lobby) !== normalizeSimpleValue(unionMeta.lobby)) {
+    lobby = "error"
+    notes.push("Lobby diversa dal meta rilevato.")
+  }
+
+  if (unionMeta.lega && normalizeSimpleValue(rows[0]?.lega) !== normalizeSimpleValue(unionMeta.lega)) {
+    lega = "error"
+    notes.push("Lega diversa dal meta rilevato.")
+  }
+
+  const fields = {
+    posizione,
+    nomePilota,
+    auto,
+    distacchi,
+    pp,
+    gv,
+    gara,
+    lobby,
+    lega,
+  }
+
+  const values = Object.values(fields)
+  const okCount = values.filter((v) => v === "ok").length
+  const warnCount = values.filter((v) => v === "warn").length
+  const errorCount = values.filter((v) => v === "error").length
+
+  let percentage = 100
+  let overallStatus: "ok" | "warn" | "error" = "ok"
+
+  if (errorCount > 0) {
+    overallStatus = "error"
+    percentage = Math.round(((okCount + warnCount * 0.5) / values.length) * 100)
+  } else if (warnCount > 0) {
+    overallStatus = "warn"
+    percentage = Math.round(((okCount + warnCount * 0.8) / values.length) * 100)
+  }
+
+  if (percentage < 0) percentage = 0
+  if (percentage > 100) percentage = 100
+
+  return {
+    overallStatus,
+    percentage,
+    fields,
+    notes,
+  }
 }
 
 function TableCell({
@@ -577,7 +965,7 @@ function ResultsTable({
         <table
           style={{
             width: "100%",
-            minWidth: exporting ? 1660 : 1320,
+            minWidth: exporting ? 1600 : 1240,
             borderCollapse: "collapse",
             tableLayout: "fixed",
           }}
@@ -595,13 +983,13 @@ function ResultsTable({
               <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: 70 }}>
                 #
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 260 : 220 }}>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 240 : 200 }}>
                 Nome pilota
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 430 : undefined }}>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 340 : 300 }}>
                 Auto
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "right", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 210 : 170 }}>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "right", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 180 : 150 }}>
                 Distacchi
               </th>
               <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 110 : 90 }}>
@@ -616,7 +1004,7 @@ function ResultsTable({
               <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 110 : 90 }}>
                 Lobby
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 150 : 120 }}>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 170 : 140 }}>
                 Lega
               </th>
             </tr>
@@ -680,15 +1068,54 @@ function ResultsTable({
                     {isGv ? <Pill left="GV" variant="violet" exporting={exporting} /> : "-"}
                   </TableCell>
 
-                  <TableCell exporting={exporting} align="center" mono dim={!r.gara}>
-                    {r.gara || "-"}
-                  </TableCell>
+                  <TableCell
+  exporting={exporting}
+  align="center"
+  mono
+  dim={!r.gara}
+  style={{
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
+  }}
+>
+  {String(r.gara).trim() === "-" ? (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minWidth: exporting ? 34 : 28,
+        height: exporting ? 28 : 24,
+        padding: exporting ? "0 10px" : "0 8px",
+        borderRadius: 999,
+        background: "rgba(255,165,0,0.16)",
+        border: "1px solid rgba(255,165,0,0.32)",
+        boxShadow: "0 0 10px rgba(255,165,0,0.12)",
+        color: "#fff3e0",
+        fontWeight: 900,
+        lineHeight: 1,
+      }}
+    >
+      -
+    </span>
+  ) : (
+    r.gara || "-"
+  )}
+</TableCell>
 
                   <TableCell exporting={exporting} align="center" mono dim={!r.lobby}>
                     {r.lobby || "-"}
                   </TableCell>
 
-                  <TableCell exporting={exporting} align="center" mono dim={!r.lega}>
+                  <TableCell
+                    exporting={exporting}
+                    align="center"
+                    mono
+                    dim={!r.lega}
+                    style={{
+                      whiteSpace: "nowrap",
+                      fontSize: exporting ? 15 : 12,
+                    }}
+                  >
                     {r.lega || "-"}
                   </TableCell>
                 </tr>
@@ -814,6 +1241,15 @@ export default function Page() {
   const [exportTextsDraft, setExportTextsDraft] = useState<ExportTexts>(DEFAULT_EXPORT_TEXTS)
   const [workspaceKey, setWorkspaceKey] = useState(0)
 
+  const [detectedPoleDriver, setDetectedPoleDriver] = useState("")
+  const [detectedBestLapDriver, setDetectedBestLapDriver] = useState("")
+  const [detectedRaceOrder, setDetectedRaceOrder] = useState<string[]>([])
+  const [manualGaraOverride, setManualGaraOverride] = useState("")
+
+  const [showAutoModal, setShowAutoModal] = useState(false)
+  const [manualAutoOverrides, setManualAutoOverrides] = useState<Record<number, string>>({})
+  const [manualAutoDraft, setManualAutoDraft] = useState<Record<number, string>>({})
+
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const exportRef = useRef<HTMLDivElement | null>(null)
 
@@ -896,6 +1332,11 @@ export default function Page() {
         88% { opacity: 1; }
         100% { opacity: 0; }
       }
+
+      @keyframes unionGlowMove {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(100%); }
+      }
     `
     document.head.appendChild(style)
 
@@ -921,6 +1362,101 @@ export default function Page() {
     return row?.nomePilota || ""
   }, [rows])
 
+  const detectedGaraDisplay = useMemo(() => {
+  const rawMetaGara = String(unionMeta.gara || "").trim()
+  const allRowsAre18 =
+    rows.length > 0 && rows.every((r) => String(r.gara || "").trim() === "18")
+
+  if (rawMetaGara === "18" && allRowsAre18) {
+    return "-"
+  }
+
+  return rawMetaGara || "-"
+}, [unionMeta.gara, rows])
+
+const effectiveGara = useMemo(() => {
+  return String(manualGaraOverride || detectedGaraDisplay || "").trim()
+}, [manualGaraOverride, detectedGaraDisplay])
+
+  const displayRows = useMemo(() => {
+  return rows.map((r) => ({
+    ...r,
+    auto: (manualAutoOverrides[r.posizione] ?? r.auto ?? "").trim(),
+    gara: effectiveGara,
+  }))
+}, [rows, manualAutoOverrides, effectiveGara])
+
+  const displayCsv = useMemo(() => {
+    if (!csv) return ""
+
+    const lines = String(csv).split("\n")
+    if (lines.length <= 1) return csv
+
+    const header = lines[0]
+    const body = displayRows.map((r) =>
+      [
+        r.posizione,
+        r.nomePilota,
+        r.auto,
+        r.distacchi,
+        r.pp,
+        r.gv,
+        r.gara,
+        r.lobby,
+        r.lega,
+      ]
+        .map((value) => {
+          const s = String(value ?? "").replace(/"/g, '""')
+          return s.includes(",") ? `"${s}"` : s
+        })
+        .join(",")
+    )
+
+    return [header, ...body].join("\n")
+  }, [csv, displayRows])
+
+  const matchSummary = useMemo(() => {
+    return buildUnionMatchSummary({
+      rows: displayRows,
+      unionMeta: { ...unionMeta, gara: effectiveGara },
+      detectedPoleDriver,
+      detectedBestLapDriver,
+      detectedRaceOrder,
+    })
+  }, [displayRows, unionMeta, effectiveGara, detectedPoleDriver, detectedBestLapDriver, detectedRaceOrder])
+
+  const hasManualAutoOverrides = useMemo(() => {
+    return Object.keys(manualAutoOverrides).length > 0
+  }, [manualAutoOverrides])
+
+  function openAutoCorrectionModal() {
+    const nextDraft: Record<number, string> = {}
+    for (const row of rows) {
+      nextDraft[row.posizione] = (manualAutoOverrides[row.posizione] ?? row.auto ?? "").trim()
+    }
+    setManualAutoDraft(nextDraft)
+    setShowAutoModal(true)
+  }
+
+  function applyAutoCorrections() {
+    const cleaned: Record<number, string> = {}
+    for (const row of rows) {
+      const draftValue = String(manualAutoDraft[row.posizione] ?? "").trim()
+      const originalValue = String(row.auto ?? "").trim()
+      if (draftValue && draftValue !== originalValue) {
+        cleaned[row.posizione] = draftValue
+      }
+    }
+    setManualAutoOverrides(cleaned)
+    setShowAutoModal(false)
+  }
+
+  function resetAutoCorrections() {
+    setManualAutoOverrides({})
+    setManualAutoDraft({})
+    setShowAutoModal(false)
+  }
+
   function handleLogin() {
     if (inputPassword === APP_PASSWORD) {
       setAuthorized(true)
@@ -941,6 +1477,13 @@ export default function Page() {
     setCsv("")
     setRows([])
     setUnionMeta({ gara: "", lobby: "", lega: "" })
+    setDetectedPoleDriver("")
+    setDetectedBestLapDriver("")
+    setDetectedRaceOrder([])
+    setManualGaraOverride("")
+    setManualAutoOverrides({})
+    setManualAutoDraft({})
+    setShowAutoModal(false)
     setLoading(false)
     setExporting(false)
     setError("")
@@ -961,7 +1504,7 @@ export default function Page() {
   }
 
   async function performExportTablePng() {
-    if (!exportRef.current || rows.length === 0) return
+    if (!exportRef.current || displayRows.length === 0) return
 
     try {
       setExporting(true)
@@ -1017,6 +1560,13 @@ export default function Page() {
     setCsv("")
     setRows([])
     setUnionMeta({ gara: "", lobby: "", lega: "" })
+    setDetectedPoleDriver("")
+    setDetectedBestLapDriver("")
+    setDetectedRaceOrder([])
+    setManualGaraOverride("")
+    setManualAutoOverrides({})
+    setManualAutoDraft({})
+    setShowAutoModal(false)
 
     try {
       const fd = new FormData()
@@ -1030,6 +1580,9 @@ export default function Page() {
       } else {
         setCsv(data.csv || "")
         setRows(Array.isArray(data.unionRows) ? data.unionRows : [])
+        setDetectedPoleDriver(data.detectedPoleDriver || "")
+        setDetectedBestLapDriver(data.detectedBestLapDriver || "")
+        setDetectedRaceOrder(Array.isArray(data.detectedRaceOrder) ? data.detectedRaceOrder : [])
         setUnionMeta(
           data.unionMeta && typeof data.unionMeta === "object"
             ? {
@@ -1286,7 +1839,7 @@ export default function Page() {
                 <HeaderBadge label="WINNER" value={winnerPilot} variant="silver" />
                 <HeaderBadge label="PP" value={ppPilot} variant="gold" />
                 <HeaderBadge label="GV" value={gvPilot} variant="violet" />
-                <HeaderBadge label="GARA" value={unionMeta.gara} variant="gold" />
+                <HeaderBadge label="GARA" value={effectiveGara} variant="gold" />
                 <HeaderBadge label="LOBBY" value={unionMeta.lobby} variant="violet" />
                 <HeaderBadge label="LEGA" value={unionMeta.lega} variant="gold" />
               </div>
@@ -1531,7 +2084,7 @@ export default function Page() {
               </div>
             )}
 
-            {rows.length > 0 && (
+            {displayRows.length > 0 && (
               <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                 <button
                   onClick={openExportModal}
@@ -1569,6 +2122,247 @@ export default function Page() {
               </div>
             )}
 
+            {displayRows.length > 0 && matchSummary.fields.gara === "warn" && (
+              <div
+                style={{
+                  borderRadius: 14,
+                  border: "1px solid rgba(255,215,0,0.28)",
+                  background: "rgba(255,215,0,0.08)",
+                  padding: 12,
+                  display: "flex",
+                  gap: 12,
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 800 }}>
+                  Numero gara sospetto o mancante. Inseriscilo manualmente:
+                </div>
+
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={manualGaraOverride}
+                  onChange={(e) => setManualGaraOverride(e.target.value.replace(/[^\d]/g, ""))}
+                  placeholder="Es. 5"
+                  style={{
+                    width: 90,
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    border: "1px solid rgba(255,255,255,0.16)",
+                    background: "rgba(0,0,0,0.22)",
+                    color: "white",
+                    fontWeight: 800,
+                  }}
+                />
+
+                {manualGaraOverride.trim() && (
+                  <button
+                    onClick={() => setManualGaraOverride("")}
+                    style={{
+                      padding: "10px 12px",
+                      borderRadius: 10,
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      background: "rgba(255,255,255,0.06)",
+                      color: "white",
+                      cursor: "pointer",
+                      fontWeight: 800,
+                      textTransform: "uppercase",
+                      fontSize: 12,
+                    }}
+                  >
+                    Rimuovi override
+                  </button>
+                )}
+              </div>
+            )}
+
+            {displayRows.length > 0 && (
+  <div
+    style={{
+      borderRadius: 14,
+      border:
+        matchSummary.fields.auto === "warn"
+          ? "1px solid rgba(255,215,0,0.28)"
+          : "1px solid rgba(255,255,255,0.10)",
+      background:
+        matchSummary.fields.auto === "warn"
+          ? "rgba(255,215,0,0.08)"
+          : "rgba(255,255,255,0.05)",
+      padding: 12,
+      display: "flex",
+      gap: 12,
+      flexWrap: "wrap",
+      alignItems: "center",
+    }}
+  >
+    <div style={{ fontSize: 13, fontWeight: 800 }}>
+      {matchSummary.fields.auto === "warn"
+        ? "Auto sospette rilevate. Puoi correggerle manualmente."
+        : hasManualAutoOverrides
+          ? "Correzioni auto manuali attive."
+          : "Correzione auto manuale opzionale."}
+    </div>
+
+    <button
+      onClick={openAutoCorrectionModal}
+      style={{
+        padding: "10px 12px",
+        borderRadius: 10,
+        border: "1px solid rgba(255,255,255,0.16)",
+        background:
+          matchSummary.fields.auto === "warn"
+            ? "rgba(160,90,255,0.18)"
+            : "rgba(255,255,255,0.08)",
+        color: "white",
+        cursor: "pointer",
+        fontWeight: 800,
+        textTransform: "uppercase",
+        fontSize: 12,
+        boxShadow:
+          matchSummary.fields.auto === "warn"
+            ? "0 0 20px rgba(160,90,255,0.10)"
+            : "none",
+      }}
+    >
+      Modifica Auto
+    </button>
+
+    {hasManualAutoOverrides && (
+      <button
+        onClick={resetAutoCorrections}
+        style={{
+          padding: "10px 12px",
+          borderRadius: 10,
+          border: "1px solid rgba(255,255,255,0.14)",
+          background: "rgba(255,255,255,0.06)",
+          color: "white",
+          cursor: "pointer",
+          fontWeight: 800,
+          textTransform: "uppercase",
+          fontSize: 12,
+        }}
+      >
+        Reset auto manuali
+      </button>
+    )}
+  </div>
+)}
+
+            {displayRows.length > 0 && (
+              <div
+                style={{
+                  borderRadius: 16,
+                  padding: 12,
+                  ...overallBoxStyle(matchSummary.overallStatus),
+                  boxShadow: "0 10px 30px rgba(0,0,0,0.22)",
+                  display: "grid",
+                  gap: 10,
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <div style={{ fontSize: 18, fontWeight: 900, letterSpacing: 0.2 }}>
+                    {matchSummary.overallStatus === "ok"
+                      ? "✅ MATCH 100%"
+                      : matchSummary.overallStatus === "warn"
+                        ? "⚠️ DA CONTROLLARE"
+                        : "❌ ERRORE REALE"}
+                  </div>
+
+                  <div style={{ fontSize: 14, fontWeight: 900 }}>
+                    Match esatto al {matchSummary.percentage}%
+                  </div>
+                </div>
+
+                <div
+                  style={{
+                    position: "relative",
+                    display: "grid",
+                    gridTemplateColumns: "repeat(9, minmax(0, 1fr))",
+                    gap: 8,
+                    padding: "8px 10px",
+                    overflow: "hidden",
+                    borderRadius: 14,
+                    border: "1px solid rgba(255,255,255,0.10)",
+                    background: "rgba(0,0,0,0.20)",
+                    boxShadow: "0 0 24px rgba(255,215,0,0.06)",
+                  }}
+                >
+                  <div
+                    style={{
+                      position: "absolute",
+                      inset: 0,
+                      borderRadius: 14,
+                      background:
+                        "linear-gradient(90deg, transparent, rgba(255,215,0,0.18), transparent)",
+                      opacity: 0.35,
+                      animation: "unionGlowMove 4s linear infinite",
+                      pointerEvents: "none",
+                    }}
+                  />
+
+                  {[
+                    ["#", matchSummary.fields.posizione],
+                    ["Nome pilota", matchSummary.fields.nomePilota],
+                    ["Auto", matchSummary.fields.auto],
+                    ["Distacchi", matchSummary.fields.distacchi],
+                    ["-PP-", matchSummary.fields.pp],
+                    ["-GV-", matchSummary.fields.gv],
+                    ["Gara", matchSummary.fields.gara],
+                    ["Lobby", matchSummary.fields.lobby],
+                    ["Lega", matchSummary.fields.lega],
+                  ].map(([label, status]) => (
+                    <div
+                      key={String(label)}
+                      style={{
+                        position: "relative",
+                        zIndex: 1,
+                        borderRadius: 10,
+                        padding: "8px 10px",
+                        fontSize: 12,
+                        fontWeight: 800,
+                        letterSpacing: 0.3,
+                        whiteSpace: "nowrap",
+                        textAlign: "center",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        backdropFilter: "blur(6px)",
+                        ...matchCellStyle(status as MatchFieldStatus),
+                      }}
+                    >
+                      {label} {statusBadge(status as MatchFieldStatus)}
+                    </div>
+                  ))}
+                </div>
+
+                {matchSummary.notes.length > 0 && (
+                  <div
+                    style={{
+                      fontSize: 11,
+                      opacity: 0.9,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    <b>Note:</b>
+                    <ul style={{ margin: "6px 0 0 18px", padding: 0 }}>
+                      {matchSummary.notes.map((note, idx) => (
+                        <li key={`${note}-${idx}`}>{note}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
             {error && (
               <pre
                 style={{
@@ -1585,9 +2379,9 @@ export default function Page() {
               </pre>
             )}
 
-            {showTable && rows.length > 0 && <ResultsTable previewRows={rows} />}
+            {showTable && displayRows.length > 0 && <ResultsTable previewRows={displayRows} />}
 
-            {csv && (
+            {displayCsv && (
               <div
                 style={{
                   borderRadius: 16,
@@ -1601,7 +2395,7 @@ export default function Page() {
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                   <div style={{ fontWeight: 900 }}>CSV Union Output</div>
                   <a
-                    href={"data:text/csv;charset=utf-8," + encodeURIComponent(csv)}
+                    href={"data:text/csv;charset=utf-8," + encodeURIComponent(displayCsv)}
                     download={`${formatLobbyShort(unionMeta.lobby).replace(/[^\w-]/g, "_")}.csv`}
                     style={{
                       color: "white",
@@ -1618,7 +2412,7 @@ export default function Page() {
                 </div>
 
                 <textarea
-                  value={csv}
+                  value={displayCsv}
                   readOnly
                   rows={14}
                   style={{
@@ -1648,6 +2442,207 @@ export default function Page() {
           </div>
         </div>
       </div>
+
+      {showAutoModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.72)",
+            backdropFilter: "blur(6px)",
+            display: "grid",
+            placeItems: "center",
+            zIndex: 9999,
+            padding: 20,
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 1100,
+              borderRadius: 22,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "linear-gradient(180deg, rgba(18,22,31,0.98), rgba(8,10,15,0.98))",
+              boxShadow: "0 20px 80px rgba(0,0,0,0.55)",
+              padding: 20,
+              display: "grid",
+              gap: 16,
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 22, fontWeight: 900 }}>Correzione Auto Manuale</div>
+              <div style={{ marginTop: 6, fontSize: 13, opacity: 0.76 }}>
+                Modifica solo le auto non corrette rilevate da OCR. Le correzioni verranno applicate a tabella, CSV e PNG.
+              </div>
+            </div>
+
+            <div
+              style={{
+                borderRadius: 16,
+                border: "1px solid rgba(255,255,255,0.10)",
+                background: "rgba(0,0,0,0.22)",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  maxHeight: "60vh",
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                }}
+              >
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    tableLayout: "fixed",
+                  }}
+                >
+                  <thead
+                    style={{
+                      position: "sticky",
+                      top: 0,
+                      zIndex: 2,
+                      background: "rgba(10,12,18,0.96)",
+                      backdropFilter: "blur(10px)",
+                    }}
+                  >
+                    <tr>
+                      <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 70 }}>#</th>
+                      <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 220 }}>Pilota</th>
+                      <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 280 }}>Auto OCR</th>
+                      <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8 }}>Auto corretta</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row) => {
+                      const suspicious = isClearlySuspiciousCar(row.auto || "")
+                      return (
+                        <tr
+                          key={`manual-auto-${row.posizione}`}
+                          style={{
+                            background: suspicious
+                              ? "linear-gradient(90deg, rgba(255,215,0,0.10), rgba(255,255,255,0.02))"
+                              : "transparent",
+                          }}
+                        >
+                          <td style={{ padding: "12px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                            <PosBadge pos={row.posizione} />
+                          </td>
+
+                          <td
+                            style={{
+                              padding: "12px",
+                              borderBottom: "1px solid rgba(255,255,255,0.08)",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {row.nomePilota}
+                          </td>
+
+                          <td
+                            style={{
+                              padding: "12px",
+                              borderBottom: "1px solid rgba(255,255,255,0.08)",
+                              color: suspicious ? "#fde68a" : "rgba(255,255,255,0.86)",
+                              fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                              fontSize: 13,
+                            }}
+                          >
+                            {row.auto || "-"}
+                          </td>
+
+                          <td
+                            style={{
+                              padding: "12px",
+                              borderBottom: "1px solid rgba(255,255,255,0.08)",
+                            }}
+                          >
+                            <input
+                              value={manualAutoDraft[row.posizione] ?? ""}
+                              onChange={(e) =>
+                                setManualAutoDraft((prev) => ({
+                                  ...prev,
+                                  [row.posizione]: e.target.value,
+                                }))
+                              }
+                              style={{
+                                width: "100%",
+                                padding: "10px 12px",
+                                borderRadius: 10,
+                                border: suspicious
+                                  ? "1px solid rgba(255,215,0,0.30)"
+                                  : "1px solid rgba(255,255,255,0.14)",
+                                background: "rgba(0,0,0,0.24)",
+                                color: "white",
+                                boxSizing: "border-box",
+                              }}
+                            />
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, flexWrap: "wrap" }}>
+              <button
+                onClick={() => setShowAutoModal(false)}
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: 14,
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  background: "rgba(255,255,255,0.06)",
+                  color: "white",
+                  cursor: "pointer",
+                  fontWeight: 900,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                Chiudi
+              </button>
+
+              <button
+                onClick={resetAutoCorrections}
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: 14,
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  background: "rgba(255,255,255,0.06)",
+                  color: "white",
+                  cursor: "pointer",
+                  fontWeight: 900,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                Reset
+              </button>
+
+              <button
+                onClick={applyAutoCorrections}
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: 14,
+                  border: "1px solid rgba(160,90,255,0.30)",
+                  background: "rgba(160,90,255,0.20)",
+                  color: "white",
+                  cursor: "pointer",
+                  fontWeight: 900,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                  boxShadow: "0 0 22px rgba(160,90,255,0.12)",
+                }}
+              >
+                Applica correzioni
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showExportModal && (
         <div
@@ -1791,7 +2786,7 @@ export default function Page() {
         }}
       >
         <div ref={exportRef}>
-          {rows.length > 0 && (
+          {displayRows.length > 0 && (
             <div
               style={{
                 width: 1920,
@@ -1821,12 +2816,12 @@ export default function Page() {
                 winnerPilot={winnerPilot}
                 ppPilot={ppPilot}
                 gvPilot={gvPilot}
-                unionMeta={unionMeta}
+                unionMeta={{ ...unionMeta, gara: effectiveGara }}
                 exporting={true}
               />
 
               <ResultsTable
-                previewRows={rows}
+                previewRows={displayRows}
                 exporting={true}
                 tableTitle="Classifica Union"
               />
