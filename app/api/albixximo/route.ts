@@ -1650,7 +1650,7 @@ export async function POST(req: NextRequest) {
       detectedPoleDriver: polePilot || "",
       detectedBestLapDriver: fastestLapPilot || "",
       detectedRaceOrder: outBase.map((r) => r.pilota || ""),
-      detectedRaceCars: raceRows.map((r) => r.auto || ""),
+      detectedRaceCars: outBase.map((r) => r.auto || ""),
       warning,
       stats: {
         qualiRows: qualiRows.length,
