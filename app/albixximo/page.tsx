@@ -2132,63 +2132,77 @@ export default function Page() {
               </div>
             )}
 
-            {displayRows.length > 0 && (matchSummary.fields.auto === "warn" || hasManualAutoOverrides) && (
-              <div
-                style={{
-                  borderRadius: 14,
-                  border: "1px solid rgba(255,215,0,0.28)",
-                  background: "rgba(255,215,0,0.08)",
-                  padding: 12,
-                  display: "flex",
-                  gap: 12,
-                  flexWrap: "wrap",
-                  alignItems: "center",
-                }}
-              >
-                <div style={{ fontSize: 13, fontWeight: 800 }}>
-                  {matchSummary.fields.auto === "warn"
-                    ? "Auto sospette rilevate. Puoi correggerle manualmente."
-                    : "Correzioni auto manuali attive."}
-                </div>
+            {displayRows.length > 0 && (
+  <div
+    style={{
+      borderRadius: 14,
+      border:
+        matchSummary.fields.auto === "warn"
+          ? "1px solid rgba(255,215,0,0.28)"
+          : "1px solid rgba(255,255,255,0.10)",
+      background:
+        matchSummary.fields.auto === "warn"
+          ? "rgba(255,215,0,0.08)"
+          : "rgba(255,255,255,0.05)",
+      padding: 12,
+      display: "flex",
+      gap: 12,
+      flexWrap: "wrap",
+      alignItems: "center",
+    }}
+  >
+    <div style={{ fontSize: 13, fontWeight: 800 }}>
+      {matchSummary.fields.auto === "warn"
+        ? "Auto sospette rilevate. Puoi correggerle manualmente."
+        : hasManualAutoOverrides
+          ? "Correzioni auto manuali attive."
+          : "Correzione auto manuale opzionale."}
+    </div>
 
-                <button
-                  onClick={openAutoCorrectionModal}
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,0.16)",
-                    background: "rgba(160,90,255,0.18)",
-                    color: "white",
-                    cursor: "pointer",
-                    fontWeight: 800,
-                    textTransform: "uppercase",
-                    fontSize: 12,
-                    boxShadow: "0 0 20px rgba(160,90,255,0.10)",
-                  }}
-                >
-                  Modifica Auto
-                </button>
+    <button
+      onClick={openAutoCorrectionModal}
+      style={{
+        padding: "10px 12px",
+        borderRadius: 10,
+        border: "1px solid rgba(255,255,255,0.16)",
+        background:
+          matchSummary.fields.auto === "warn"
+            ? "rgba(160,90,255,0.18)"
+            : "rgba(255,255,255,0.08)",
+        color: "white",
+        cursor: "pointer",
+        fontWeight: 800,
+        textTransform: "uppercase",
+        fontSize: 12,
+        boxShadow:
+          matchSummary.fields.auto === "warn"
+            ? "0 0 20px rgba(160,90,255,0.10)"
+            : "none",
+      }}
+    >
+      Modifica Auto
+    </button>
 
-                {hasManualAutoOverrides && (
-                  <button
-                    onClick={resetAutoCorrections}
-                    style={{
-                      padding: "10px 12px",
-                      borderRadius: 10,
-                      border: "1px solid rgba(255,255,255,0.14)",
-                      background: "rgba(255,255,255,0.06)",
-                      color: "white",
-                      cursor: "pointer",
-                      fontWeight: 800,
-                      textTransform: "uppercase",
-                      fontSize: 12,
-                    }}
-                  >
-                    Reset auto manuali
-                  </button>
-                )}
-              </div>
-            )}
+    {hasManualAutoOverrides && (
+      <button
+        onClick={resetAutoCorrections}
+        style={{
+          padding: "10px 12px",
+          borderRadius: 10,
+          border: "1px solid rgba(255,255,255,0.14)",
+          background: "rgba(255,255,255,0.06)",
+          color: "white",
+          cursor: "pointer",
+          fontWeight: 800,
+          textTransform: "uppercase",
+          fontSize: 12,
+        }}
+      >
+        Reset auto manuali
+      </button>
+    )}
+  </div>
+)}
 
             {displayRows.length > 0 && (
               <div
