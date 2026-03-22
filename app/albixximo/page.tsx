@@ -1345,19 +1345,29 @@ export default function Page() {
     return row?.nomePilota || ""
   }, [rows])
 
-  const effectiveGara = useMemo(() => {
-    return String(manualGaraOverride || unionMeta.gara || "").trim()
-  }, [manualGaraOverride, unionMeta.gara])
+  const detectedGaraDisplay = useMemo(() => {
+  const rawMetaGara = String(unionMeta.gara || "").trim()
+  const allRowsAre18 =
+    rows.length > 0 && rows.every((r) => String(r.gara || "").trim() === "18")
+
+  if (rawMetaGara === "18" && allRowsAre18) {
+    return "-"
+  }
+
+  return rawMetaGara || "-"
+}, [unionMeta.gara, rows])
+
+const effectiveGara = useMemo(() => {
+  return String(manualGaraOverride || detectedGaraDisplay || "").trim()
+}, [manualGaraOverride, detectedGaraDisplay])
 
   const displayRows = useMemo(() => {
   return rows.map((r) => ({
     ...r,
     auto: (manualAutoOverrides[r.posizione] ?? r.auto ?? "").trim(),
-    gara: manualGaraOverride.trim()
-      ? manualGaraOverride.trim()
-      : (unionMeta.gara || "-"),
+    gara: effectiveGara,
   }))
-}, [rows, manualAutoOverrides, manualGaraOverride, unionMeta.gara])
+}, [rows, manualAutoOverrides, effectiveGara])
 
   const displayCsv = useMemo(() => {
     if (!csv) return ""
@@ -1559,7 +1569,7 @@ export default function Page() {
         setUnionMeta(
           data.unionMeta && typeof data.unionMeta === "object"
             ? {
-                gara: data.unionMeta.gara && String(data.unionMeta.gara).trim() !== "" ? data.unionMeta.gara : "-",
+                gara: data.unionMeta.gara || "",
                 lobby: data.unionMeta.lobby || "",
                 lega: data.unionMeta.lega || "",
               }
