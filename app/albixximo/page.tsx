@@ -371,14 +371,17 @@ function buildUnionMatchSummary({
   }
 
   if (gara !== "error") {
-    const allGaraValues = rows.map((r) => String(r.gara || "").trim())
-    const uniqueGara = new Set(allGaraValues)
+  const allGaraValues = rows.map((r) => String(r.gara || "").trim())
+  const uniqueGara = new Set(allGaraValues)
 
-    if (uniqueGara.size === 1 && uniqueGara.has("18")) {
-      gara = "warn"
-      notes.push("⚠️ Numero gara non rilevato dagli screen (–). Inserisci manualmente.")
-    }
+  if (
+    uniqueGara.size === 1 &&
+    (uniqueGara.has("18") || uniqueGara.has("-") || uniqueGara.has(""))
+  ) {
+    gara = "warn"
+    notes.push("Numero gara non rilevato dagli screen (–). Inserisci manualmente.")
   }
+}
 
   if (unionMeta.lobby && normalizeSimpleValue(rows[0]?.lobby) !== normalizeSimpleValue(unionMeta.lobby)) {
     lobby = "error"
