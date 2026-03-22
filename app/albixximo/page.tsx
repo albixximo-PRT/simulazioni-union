@@ -302,24 +302,23 @@ function buildUnionMatchSummary({
   }
 
   for (const row of rows) {
-  if (!String(row.auto || "").trim()) {
-    auto = "error"
-    notes.push("Presente almeno un'auto vuota.")
-    break
-  }
-}
-
-if (auto !== "error") {
-  for (let i = 0; i < rows.length; i++) {
-    const csvCar = rows[i]?.auto || ""
-
-    if (isClearlySuspiciousCar(csvCar)) {
-      auto = "warn"
-      notes.push(`Possibile auto anomala in posizione ${i + 1}.`)
+    if (!String(row.auto || "").trim()) {
+      auto = "error"
+      notes.push("Presente almeno un'auto vuota.")
       break
     }
   }
-}
+
+  if (auto !== "error") {
+    for (let i = 0; i < rows.length; i++) {
+      const csvCar = rows[i]?.auto || ""
+      if (isClearlySuspiciousCar(csvCar)) {
+        auto = "warn"
+        notes.push(`Possibile auto anomala in posizione ${i + 1}.`)
+        break
+      }
+    }
+  }
 
   for (const row of rows) {
     if (!isUnionDistaccoValid(row.distacchi, row.posizione)) {
@@ -388,6 +387,16 @@ if (auto !== "error") {
   if (unionMeta.gara && normalizeSimpleValue(rows[0]?.gara) !== normalizeSimpleValue(unionMeta.gara)) {
     gara = "error"
     notes.push("Gara diversa dal meta rilevato.")
+  }
+
+  if (gara !== "error") {
+    const allGaraValues = rows.map((r) => String(r.gara || "").trim())
+    const uniqueGara = new Set(allGaraValues)
+
+    if (uniqueGara.size === 1 && uniqueGara.has("18")) {
+      gara = "warn"
+      notes.push("Numero gara non rilevato dagli screen (valore default 18). Controlla o inserisci manualmente.")
+    }
   }
 
   if (unionMeta.lobby && normalizeSimpleValue(rows[0]?.lobby) !== normalizeSimpleValue(unionMeta.lobby)) {
@@ -1222,6 +1231,7 @@ export default function Page() {
   const [detectedBestLapDriver, setDetectedBestLapDriver] = useState("")
   const [detectedRaceOrder, setDetectedRaceOrder] = useState<string[]>([])
   const [detectedRaceCars, setDetectedRaceCars] = useState<string[]>([])
+  const [manualGaraOverride, setManualGaraOverride] = useState("")
 
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const exportRef = useRef<HTMLDivElement | null>(null)
@@ -1335,16 +1345,45 @@ export default function Page() {
     return row?.nomePilota || ""
   }, [rows])
 
+  const effectiveGara = useMemo(() => {
+    return String(manualGaraOverride || unionMeta.gara || "").trim()
+  }, [manualGaraOverride, unionMeta.gara])
+
+  const displayRows = useMemo(() => {
+    if (!manualGaraOverride.trim()) return rows
+    return rows.map((r) => ({
+      ...r,
+      gara: manualGaraOverride.trim(),
+    }))
+  }, [rows, manualGaraOverride])
+
+  const displayCsv = useMemo(() => {
+    if (!manualGaraOverride.trim()) return csv
+    const lines = String(csv || "").split("\n")
+    if (lines.length <= 1) return csv
+
+    const header = lines[0]
+    const body = lines.slice(1).map((line) => {
+      const parts = line.split(",")
+      if (parts.length >= 9) {
+        parts[6] = manualGaraOverride.trim()
+      }
+      return parts.join(",")
+    })
+
+    return [header, ...body].join("\n")
+  }, [csv, manualGaraOverride])
+
   const matchSummary = useMemo(() => {
     return buildUnionMatchSummary({
-      rows,
-      unionMeta,
+      rows: displayRows,
+      unionMeta: { ...unionMeta, gara: effectiveGara },
       detectedPoleDriver,
       detectedBestLapDriver,
       detectedRaceOrder,
       detectedRaceCars,
     })
-  }, [rows, unionMeta, detectedPoleDriver, detectedBestLapDriver, detectedRaceOrder, detectedRaceCars])
+  }, [displayRows, unionMeta, effectiveGara, detectedPoleDriver, detectedBestLapDriver, detectedRaceOrder, detectedRaceCars])
 
   function handleLogin() {
     if (inputPassword === APP_PASSWORD) {
@@ -1370,6 +1409,7 @@ export default function Page() {
     setDetectedBestLapDriver("")
     setDetectedRaceOrder([])
     setDetectedRaceCars([])
+    setManualGaraOverride("")
     setLoading(false)
     setExporting(false)
     setError("")
@@ -1390,7 +1430,7 @@ export default function Page() {
   }
 
   async function performExportTablePng() {
-    if (!exportRef.current || rows.length === 0) return
+    if (!exportRef.current || displayRows.length === 0) return
 
     try {
       setExporting(true)
@@ -1450,6 +1490,7 @@ export default function Page() {
     setDetectedBestLapDriver("")
     setDetectedRaceOrder([])
     setDetectedRaceCars([])
+    setManualGaraOverride("")
 
     try {
       const fd = new FormData()
@@ -1723,7 +1764,7 @@ export default function Page() {
                 <HeaderBadge label="WINNER" value={winnerPilot} variant="silver" />
                 <HeaderBadge label="PP" value={ppPilot} variant="gold" />
                 <HeaderBadge label="GV" value={gvPilot} variant="violet" />
-                <HeaderBadge label="GARA" value={unionMeta.gara} variant="gold" />
+                <HeaderBadge label="GARA" value={effectiveGara} variant="gold" />
                 <HeaderBadge label="LOBBY" value={unionMeta.lobby} variant="violet" />
                 <HeaderBadge label="LEGA" value={unionMeta.lega} variant="gold" />
               </div>
@@ -2006,6 +2047,61 @@ export default function Page() {
               </div>
             )}
 
+            {rows.length > 0 && matchSummary.fields.gara === "warn" && (
+              <div
+                style={{
+                  borderRadius: 14,
+                  border: "1px solid rgba(255,215,0,0.28)",
+                  background: "rgba(255,215,0,0.08)",
+                  padding: 12,
+                  display: "flex",
+                  gap: 12,
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 800 }}>
+                  Numero gara sospetto o mancante. Inseriscilo manualmente:
+                </div>
+
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  value={manualGaraOverride}
+                  onChange={(e) => setManualGaraOverride(e.target.value.replace(/[^\d]/g, ""))}
+                  placeholder="Es. 5"
+                  style={{
+                    width: 90,
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    border: "1px solid rgba(255,255,255,0.16)",
+                    background: "rgba(0,0,0,0.22)",
+                    color: "white",
+                    fontWeight: 800,
+                  }}
+                />
+
+                {manualGaraOverride.trim() && (
+                  <button
+                    onClick={() => setManualGaraOverride("")}
+                    style={{
+                      padding: "10px 12px",
+                      borderRadius: 10,
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      background: "rgba(255,255,255,0.06)",
+                      color: "white",
+                      cursor: "pointer",
+                      fontWeight: 800,
+                      textTransform: "uppercase",
+                      fontSize: 12,
+                    }}
+                  >
+                    Rimuovi override
+                  </button>
+                )}
+              </div>
+            )}
+
             {rows.length > 0 && (
               <div
                 style={{
@@ -2136,9 +2232,9 @@ export default function Page() {
               </pre>
             )}
 
-            {showTable && rows.length > 0 && <ResultsTable previewRows={rows} />}
+            {showTable && displayRows.length > 0 && <ResultsTable previewRows={displayRows} />}
 
-            {csv && (
+            {displayCsv && (
               <div
                 style={{
                   borderRadius: 16,
@@ -2152,7 +2248,7 @@ export default function Page() {
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                   <div style={{ fontWeight: 900 }}>CSV Union Output</div>
                   <a
-                    href={"data:text/csv;charset=utf-8," + encodeURIComponent(csv)}
+                    href={"data:text/csv;charset=utf-8," + encodeURIComponent(displayCsv)}
                     download={`${formatLobbyShort(unionMeta.lobby).replace(/[^\w-]/g, "_")}.csv`}
                     style={{
                       color: "white",
@@ -2169,7 +2265,7 @@ export default function Page() {
                 </div>
 
                 <textarea
-                  value={csv}
+                  value={displayCsv}
                   readOnly
                   rows={14}
                   style={{
@@ -2342,7 +2438,7 @@ export default function Page() {
         }}
       >
         <div ref={exportRef}>
-          {rows.length > 0 && (
+          {displayRows.length > 0 && (
             <div
               style={{
                 width: 1920,
@@ -2372,12 +2468,12 @@ export default function Page() {
                 winnerPilot={winnerPilot}
                 ppPilot={ppPilot}
                 gvPilot={gvPilot}
-                unionMeta={unionMeta}
+                unionMeta={{ ...unionMeta, gara: effectiveGara }}
                 exporting={true}
               />
 
               <ResultsTable
-                previewRows={rows}
+                previewRows={displayRows}
                 exporting={true}
                 tableTitle="Classifica Union"
               />
