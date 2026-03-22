@@ -85,22 +85,6 @@ function normalizeSimpleValue(value: string) {
   return String(value || "").trim().toLowerCase()
 }
 
-function normalizeCarForMatch(value: string) {
-  return String(value || "")
-    .toLowerCase()
-    .replace(/[''`´’‘]/g, "")
-    .replace(/[‐-–—]/g, "-")
-    .replace(/\s+/g, " ")
-    .trim()
-}
-
-function sameCarForMatch(a: string, b: string) {
-  const aa = normalizeCarForMatch(a)
-  const bb = normalizeCarForMatch(b)
-  if (!aa || !bb) return false
-  return aa === bb
-}
-
 function isClearlySuspiciousCar(value: string): boolean {
   const raw = String(value || "").trim()
   if (!raw) return true
@@ -115,7 +99,6 @@ function isClearlySuspiciousCar(value: string): boolean {
     .trim()
 
   if (!v) return true
-
   if (/^\d+$/.test(v)) return true
   if (!/[a-z]/i.test(v)) return true
   if (v.length < 4) return true
@@ -243,14 +226,12 @@ function buildUnionMatchSummary({
   detectedPoleDriver,
   detectedBestLapDriver,
   detectedRaceOrder,
-  detectedRaceCars,
 }: {
   rows: UnionRow[]
   unionMeta: UnionMeta
   detectedPoleDriver: string
   detectedBestLapDriver: string
   detectedRaceOrder: string[]
-  detectedRaceCars: string[]
 }): MatchSummary {
   const notes: string[] = []
 
@@ -1230,8 +1211,11 @@ export default function Page() {
   const [detectedPoleDriver, setDetectedPoleDriver] = useState("")
   const [detectedBestLapDriver, setDetectedBestLapDriver] = useState("")
   const [detectedRaceOrder, setDetectedRaceOrder] = useState<string[]>([])
-  const [detectedRaceCars, setDetectedRaceCars] = useState<string[]>([])
   const [manualGaraOverride, setManualGaraOverride] = useState("")
+
+  const [showAutoModal, setShowAutoModal] = useState(false)
+  const [manualAutoOverrides, setManualAutoOverrides] = useState<Record<number, string>>({})
+  const [manualAutoDraft, setManualAutoDraft] = useState<Record<number, string>>({})
 
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const exportRef = useRef<HTMLDivElement | null>(null)
@@ -1350,29 +1334,41 @@ export default function Page() {
   }, [manualGaraOverride, unionMeta.gara])
 
   const displayRows = useMemo(() => {
-    if (!manualGaraOverride.trim()) return rows
     return rows.map((r) => ({
       ...r,
-      gara: manualGaraOverride.trim(),
+      auto: (manualAutoOverrides[r.posizione] ?? r.auto ?? "").trim(),
+      gara: manualGaraOverride.trim() ? manualGaraOverride.trim() : r.gara,
     }))
-  }, [rows, manualGaraOverride])
+  }, [rows, manualAutoOverrides, manualGaraOverride])
 
   const displayCsv = useMemo(() => {
-    if (!manualGaraOverride.trim()) return csv
-    const lines = String(csv || "").split("\n")
+    if (!csv) return ""
+
+    const lines = String(csv).split("\n")
     if (lines.length <= 1) return csv
 
     const header = lines[0]
-    const body = lines.slice(1).map((line) => {
-      const parts = line.split(",")
-      if (parts.length >= 9) {
-        parts[6] = manualGaraOverride.trim()
-      }
-      return parts.join(",")
-    })
+    const body = displayRows.map((r) =>
+      [
+        r.posizione,
+        r.nomePilota,
+        r.auto,
+        r.distacchi,
+        r.pp,
+        r.gv,
+        r.gara,
+        r.lobby,
+        r.lega,
+      ]
+        .map((value) => {
+          const s = String(value ?? "").replace(/"/g, '""')
+          return s.includes(",") ? `"${s}"` : s
+        })
+        .join(",")
+    )
 
     return [header, ...body].join("\n")
-  }, [csv, manualGaraOverride])
+  }, [csv, displayRows])
 
   const matchSummary = useMemo(() => {
     return buildUnionMatchSummary({
@@ -1381,9 +1377,40 @@ export default function Page() {
       detectedPoleDriver,
       detectedBestLapDriver,
       detectedRaceOrder,
-      detectedRaceCars,
     })
-  }, [displayRows, unionMeta, effectiveGara, detectedPoleDriver, detectedBestLapDriver, detectedRaceOrder, detectedRaceCars])
+  }, [displayRows, unionMeta, effectiveGara, detectedPoleDriver, detectedBestLapDriver, detectedRaceOrder])
+
+  const hasManualAutoOverrides = useMemo(() => {
+    return Object.keys(manualAutoOverrides).length > 0
+  }, [manualAutoOverrides])
+
+  function openAutoCorrectionModal() {
+    const nextDraft: Record<number, string> = {}
+    for (const row of rows) {
+      nextDraft[row.posizione] = (manualAutoOverrides[row.posizione] ?? row.auto ?? "").trim()
+    }
+    setManualAutoDraft(nextDraft)
+    setShowAutoModal(true)
+  }
+
+  function applyAutoCorrections() {
+    const cleaned: Record<number, string> = {}
+    for (const row of rows) {
+      const draftValue = String(manualAutoDraft[row.posizione] ?? "").trim()
+      const originalValue = String(row.auto ?? "").trim()
+      if (draftValue && draftValue !== originalValue) {
+        cleaned[row.posizione] = draftValue
+      }
+    }
+    setManualAutoOverrides(cleaned)
+    setShowAutoModal(false)
+  }
+
+  function resetAutoCorrections() {
+    setManualAutoOverrides({})
+    setManualAutoDraft({})
+    setShowAutoModal(false)
+  }
 
   function handleLogin() {
     if (inputPassword === APP_PASSWORD) {
@@ -1408,8 +1435,10 @@ export default function Page() {
     setDetectedPoleDriver("")
     setDetectedBestLapDriver("")
     setDetectedRaceOrder([])
-    setDetectedRaceCars([])
     setManualGaraOverride("")
+    setManualAutoOverrides({})
+    setManualAutoDraft({})
+    setShowAutoModal(false)
     setLoading(false)
     setExporting(false)
     setError("")
@@ -1489,8 +1518,10 @@ export default function Page() {
     setDetectedPoleDriver("")
     setDetectedBestLapDriver("")
     setDetectedRaceOrder([])
-    setDetectedRaceCars([])
     setManualGaraOverride("")
+    setManualAutoOverrides({})
+    setManualAutoDraft({})
+    setShowAutoModal(false)
 
     try {
       const fd = new FormData()
@@ -1507,7 +1538,6 @@ export default function Page() {
         setDetectedPoleDriver(data.detectedPoleDriver || "")
         setDetectedBestLapDriver(data.detectedBestLapDriver || "")
         setDetectedRaceOrder(Array.isArray(data.detectedRaceOrder) ? data.detectedRaceOrder : [])
-        setDetectedRaceCars(Array.isArray(data.detectedRaceCars) ? data.detectedRaceCars : [])
         setUnionMeta(
           data.unionMeta && typeof data.unionMeta === "object"
             ? {
@@ -2009,7 +2039,7 @@ export default function Page() {
               </div>
             )}
 
-            {rows.length > 0 && (
+            {displayRows.length > 0 && (
               <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                 <button
                   onClick={openExportModal}
@@ -2047,7 +2077,7 @@ export default function Page() {
               </div>
             )}
 
-            {rows.length > 0 && matchSummary.fields.gara === "warn" && (
+            {displayRows.length > 0 && matchSummary.fields.gara === "warn" && (
               <div
                 style={{
                   borderRadius: 14,
@@ -2102,7 +2132,65 @@ export default function Page() {
               </div>
             )}
 
-            {rows.length > 0 && (
+            {displayRows.length > 0 && (matchSummary.fields.auto === "warn" || hasManualAutoOverrides) && (
+              <div
+                style={{
+                  borderRadius: 14,
+                  border: "1px solid rgba(255,215,0,0.28)",
+                  background: "rgba(255,215,0,0.08)",
+                  padding: 12,
+                  display: "flex",
+                  gap: 12,
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 800 }}>
+                  {matchSummary.fields.auto === "warn"
+                    ? "Auto sospette rilevate. Puoi correggerle manualmente."
+                    : "Correzioni auto manuali attive."}
+                </div>
+
+                <button
+                  onClick={openAutoCorrectionModal}
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    border: "1px solid rgba(255,255,255,0.16)",
+                    background: "rgba(160,90,255,0.18)",
+                    color: "white",
+                    cursor: "pointer",
+                    fontWeight: 800,
+                    textTransform: "uppercase",
+                    fontSize: 12,
+                    boxShadow: "0 0 20px rgba(160,90,255,0.10)",
+                  }}
+                >
+                  Modifica Auto
+                </button>
+
+                {hasManualAutoOverrides && (
+                  <button
+                    onClick={resetAutoCorrections}
+                    style={{
+                      padding: "10px 12px",
+                      borderRadius: 10,
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      background: "rgba(255,255,255,0.06)",
+                      color: "white",
+                      cursor: "pointer",
+                      fontWeight: 800,
+                      textTransform: "uppercase",
+                      fontSize: 12,
+                    }}
+                  >
+                    Reset auto manuali
+                  </button>
+                )}
+              </div>
+            )}
+
+            {displayRows.length > 0 && (
               <div
                 style={{
                   borderRadius: 16,
@@ -2295,6 +2383,207 @@ export default function Page() {
           </div>
         </div>
       </div>
+
+      {showAutoModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.72)",
+            backdropFilter: "blur(6px)",
+            display: "grid",
+            placeItems: "center",
+            zIndex: 9999,
+            padding: 20,
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 1100,
+              borderRadius: 22,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "linear-gradient(180deg, rgba(18,22,31,0.98), rgba(8,10,15,0.98))",
+              boxShadow: "0 20px 80px rgba(0,0,0,0.55)",
+              padding: 20,
+              display: "grid",
+              gap: 16,
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 22, fontWeight: 900 }}>Correzione Auto Manuale</div>
+              <div style={{ marginTop: 6, fontSize: 13, opacity: 0.76 }}>
+                Modifica solo le auto non corrette rilevate da OCR. Le correzioni verranno applicate a tabella, CSV e PNG.
+              </div>
+            </div>
+
+            <div
+              style={{
+                borderRadius: 16,
+                border: "1px solid rgba(255,255,255,0.10)",
+                background: "rgba(0,0,0,0.22)",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  maxHeight: "60vh",
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                }}
+              >
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    tableLayout: "fixed",
+                  }}
+                >
+                  <thead
+                    style={{
+                      position: "sticky",
+                      top: 0,
+                      zIndex: 2,
+                      background: "rgba(10,12,18,0.96)",
+                      backdropFilter: "blur(10px)",
+                    }}
+                  >
+                    <tr>
+                      <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 70 }}>#</th>
+                      <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 220 }}>Pilota</th>
+                      <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 280 }}>Auto OCR</th>
+                      <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8 }}>Auto corretta</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((row) => {
+                      const suspicious = isClearlySuspiciousCar(row.auto || "")
+                      return (
+                        <tr
+                          key={`manual-auto-${row.posizione}`}
+                          style={{
+                            background: suspicious
+                              ? "linear-gradient(90deg, rgba(255,215,0,0.10), rgba(255,255,255,0.02))"
+                              : "transparent",
+                          }}
+                        >
+                          <td style={{ padding: "12px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                            <PosBadge pos={row.posizione} />
+                          </td>
+
+                          <td
+                            style={{
+                              padding: "12px",
+                              borderBottom: "1px solid rgba(255,255,255,0.08)",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {row.nomePilota}
+                          </td>
+
+                          <td
+                            style={{
+                              padding: "12px",
+                              borderBottom: "1px solid rgba(255,255,255,0.08)",
+                              color: suspicious ? "#fde68a" : "rgba(255,255,255,0.86)",
+                              fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                              fontSize: 13,
+                            }}
+                          >
+                            {row.auto || "-"}
+                          </td>
+
+                          <td
+                            style={{
+                              padding: "12px",
+                              borderBottom: "1px solid rgba(255,255,255,0.08)",
+                            }}
+                          >
+                            <input
+                              value={manualAutoDraft[row.posizione] ?? ""}
+                              onChange={(e) =>
+                                setManualAutoDraft((prev) => ({
+                                  ...prev,
+                                  [row.posizione]: e.target.value,
+                                }))
+                              }
+                              style={{
+                                width: "100%",
+                                padding: "10px 12px",
+                                borderRadius: 10,
+                                border: suspicious
+                                  ? "1px solid rgba(255,215,0,0.30)"
+                                  : "1px solid rgba(255,255,255,0.14)",
+                                background: "rgba(0,0,0,0.24)",
+                                color: "white",
+                                boxSizing: "border-box",
+                              }}
+                            />
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, flexWrap: "wrap" }}>
+              <button
+                onClick={() => setShowAutoModal(false)}
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: 14,
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  background: "rgba(255,255,255,0.06)",
+                  color: "white",
+                  cursor: "pointer",
+                  fontWeight: 900,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                Chiudi
+              </button>
+
+              <button
+                onClick={resetAutoCorrections}
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: 14,
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  background: "rgba(255,255,255,0.06)",
+                  color: "white",
+                  cursor: "pointer",
+                  fontWeight: 900,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                Reset
+              </button>
+
+              <button
+                onClick={applyAutoCorrections}
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: 14,
+                  border: "1px solid rgba(160,90,255,0.30)",
+                  background: "rgba(160,90,255,0.20)",
+                  color: "white",
+                  cursor: "pointer",
+                  fontWeight: 900,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                  boxShadow: "0 0 22px rgba(160,90,255,0.12)",
+                }}
+              >
+                Applica correzioni
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showExportModal && (
         <div
