@@ -1350,12 +1350,14 @@ export default function Page() {
   }, [manualGaraOverride, unionMeta.gara])
 
   const displayRows = useMemo(() => {
-    return rows.map((r) => ({
-      ...r,
-      auto: (manualAutoOverrides[r.posizione] ?? r.auto ?? "").trim(),
-      gara: manualGaraOverride.trim() ? manualGaraOverride.trim() : r.gara,
-    }))
-  }, [rows, manualAutoOverrides, manualGaraOverride])
+  return rows.map((r) => ({
+    ...r,
+    auto: (manualAutoOverrides[r.posizione] ?? r.auto ?? "").trim(),
+    gara: manualGaraOverride.trim()
+      ? manualGaraOverride.trim()
+      : (unionMeta.gara || "-"),
+  }))
+}, [rows, manualAutoOverrides, manualGaraOverride, unionMeta.gara])
 
   const displayCsv = useMemo(() => {
     if (!csv) return ""
