@@ -1073,19 +1073,33 @@ function ResultsTable({
   align="center"
   mono
   dim={!r.gara}
-  style={
-    String(r.gara).trim() === "-"
-      ? {
-          background: "linear-gradient(180deg, rgba(255,165,0,0.18), rgba(0,0,0,0.25))",
-          border: "1px solid rgba(255,165,0,0.35)",
-          boxShadow: "0 0 12px rgba(255,165,0,0.16)",
-          color: "#fff3e0",
-          fontWeight: 900,
-        }
-      : undefined
-  }
+  style={{
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
+  }}
 >
-  {r.gara || "-"}
+  {String(r.gara).trim() === "-" ? (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        minWidth: exporting ? 34 : 28,
+        height: exporting ? 28 : 24,
+        padding: exporting ? "0 10px" : "0 8px",
+        borderRadius: 999,
+        background: "rgba(255,165,0,0.16)",
+        border: "1px solid rgba(255,165,0,0.32)",
+        boxShadow: "0 0 10px rgba(255,165,0,0.12)",
+        color: "#fff3e0",
+        fontWeight: 900,
+        lineHeight: 1,
+      }}
+    >
+      -
+    </span>
+  ) : (
+    r.gara || "-"
+  )}
 </TableCell>
 
                   <TableCell exporting={exporting} align="center" mono dim={!r.lobby}>
