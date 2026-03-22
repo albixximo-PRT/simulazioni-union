@@ -920,21 +920,21 @@ function renderDGCell(
   const formatted = `+${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}.000`
 
   return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: exporting ? 8 : 7,
-        whiteSpace: "nowrap",
-        lineHeight: 1,
-      }}
-    >
+  <span
+    style={{
+      display: "inline-flex",
+      alignItems: "baseline",
+      justifyContent: "center",
+      gap: exporting ? 8 : 7,
+      whiteSpace: "nowrap",
+      lineHeight: 1,
+    }}
+  >
       <span
         style={{
           color: timeColor,
           fontWeight: 900,
-          fontSize: exporting ? 15 : 14,
+          fontSize: exporting ? 17 : 16,
           fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
           letterSpacing: 0.1,
           textShadow:
@@ -947,35 +947,38 @@ function renderDGCell(
       </span>
 
       <span
-        style={{
-          color: "rgba(255,255,255,0.92)",
-          fontWeight: 800,
-          fontSize: exporting ? 13 : 12,
-          lineHeight: 1,
-        }}
-      >
-        |
-      </span>
+  style={{
+    color: "rgba(255,255,255,0.92)",
+    fontWeight: 800,
+    fontSize: exporting ? 13 : 12,
+    lineHeight: 1,
+    display: "inline-block",
+    transform: "translateY(-1px)",
+  }}
+>
+  |
+</span>
 
       <span
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          justifyContent: "center",
-          minWidth: exporting ? 20 : 18,
-          height: exporting ? 18 : 16,
-          padding: exporting ? "0 7px" : "0 6px",
-          borderRadius: 999,
-          background: pillBg,
-          border: pillBorder,
-          boxShadow: pillShadow,
-          color: "rgba(0,0,0,0.92)",
-          fontWeight: 900,
-          fontSize: exporting ? 11 : 10,
-          lineHeight: 1,
-          textTransform: "uppercase",
-        }}
-      >
+  style={{
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: exporting ? 24 : 20,
+    height: exporting ? 20 : 18,
+    padding: exporting ? "0 8px" : "0 7px",
+    borderRadius: 999,
+    background: pillBg,
+    border: pillBorder,
+    boxShadow: pillShadow,
+    color: "rgba(0,0,0,0.92)",
+    fontWeight: 900,
+    fontSize: exporting ? 12 : 11,
+    lineHeight: 1,
+    textTransform: "uppercase",
+    transform: "translateY(-1px)",
+  }}
+>
         {kind}
       </span>
     </span>
