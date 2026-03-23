@@ -2837,7 +2837,7 @@ export default function Page() {
 {showTable && finalRows.length > 0 && (
   <ResultsTable
   previewRows={finalRows}
-  tableTitle={`Classifica definitiva Union ${unionMeta.lega ? unionMeta.lega + " " : ""}Lobby ${formatLobbyShort(unionMeta.lobby)}`}
+  tableTitle={`Classifica definitiva Union - ${unionMeta.lega ? unionMeta.lega + " " : ""}Lobby ${formatLobbyShort(unionMeta.lobby)} Gara ${effectiveGara || "-"}`}
 />
 )}
 
