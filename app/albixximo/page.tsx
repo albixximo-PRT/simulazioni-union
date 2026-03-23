@@ -582,8 +582,8 @@ function buildUnionMatchSummary({
 
 /* ===================== PUNTI UNION ===================== */
 
-function getPointsForRow(row: UnionRow): number {
-  const basePoints: Record<number, number> = {
+function getPointsForRow(r: DGRowComputed): number {
+  const basePointsMap: Record<number, number> = {
     1: 30,
     2: 26,
     3: 22,
@@ -600,13 +600,10 @@ function getPointsForRow(row: UnionRow): number {
     14: 0,
   }
 
-  let points = basePoints[row.posizione] ?? 0
+  let points = basePointsMap[r.posizione] ?? 0
 
-  const isPP = String(row.pp || "").trim().toUpperCase() === "PP"
-  const isGV = String(row.gv || "").trim().toUpperCase() === "GV"
-
-  if (isPP) points += 1
-  if (isGV) points += 1
+  if ((r.pp || "").trim().toUpperCase() === "PP") points += 1
+  if ((r.gv || "").trim().toUpperCase() === "GV") points += 1
 
   return points
 }
@@ -1654,7 +1651,13 @@ function ResultsTable({
                           display: "inline-flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          minWidth: exporting ? 30 : 26,
+                          minWidth: exporting ? 34 : 30,
+                          height: exporting ? 20 : 18,
+                          padding: exporting ? "0 8px" : "0 7px",
+                          borderRadius: 999,
+                          border: "1px solid rgba(255,255,255,0.22)",
+                          background: "transparent",
+                          boxShadow: "none",
                           color: normalPointsColor,
                           fontWeight: 900,
                           fontSize: exporting ? 16 : 14,
