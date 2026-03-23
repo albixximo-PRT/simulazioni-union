@@ -3592,10 +3592,10 @@ export default function Page() {
               />
 
               <ResultsTable
-                previewRows={finalRows}
-                exporting={true}
-                tableTitle="Classifica Union"
-              />
+  previewRows={finalRows}
+  exporting={true}
+  tableTitle={`Classifica definitiva Union - ${unionMeta.lega ? unionMeta.lega + " " : ""}Lobby ${formatLobbyShort(unionMeta.lobby)}${effectiveGara ? ` Gara ${effectiveGara}` : ""}`}
+/>
             </div>
           )}
         </div>
