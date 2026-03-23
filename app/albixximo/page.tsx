@@ -2835,7 +2835,10 @@ export default function Page() {
 
             {/* TABELLONA RISULTATI SUBITO DOPO ESTRAZIONE */}
 {showTable && finalRows.length > 0 && (
-  <ResultsTable previewRows={finalRows} />
+  <ResultsTable
+  previewRows={finalRows}
+  tableTitle={`Classifica definitiva Union ${unionMeta.lega ? unionMeta.lega + " " : ""}Lobby ${formatLobbyShort(unionMeta.lobby)}`}
+/>
 )}
 
 {/* DIREZIONE GARA DOPO LA TABELLA */}
@@ -3134,24 +3137,22 @@ export default function Page() {
             )}
 
             {error && (
-              <pre
-                style={{
-                  whiteSpace: "pre-wrap",
-                  color: "#ff6b6b",
-                  background: "rgba(0,0,0,0.35)",
-                  border: "1px solid rgba(255,255,255,0.10)",
-                  padding: 12,
-                  borderRadius: 14,
-                  overflowX: "auto",
-                }}
-              >
-                {error}
-              </pre>
-            )}
+  <pre
+    style={{
+      whiteSpace: "pre-wrap",
+      color: "#ff6b6b",
+      background: "rgba(0,0,0,0.35)",
+      border: "1px solid rgba(255,255,255,0.10)",
+      padding: 12,
+      borderRadius: 14,
+      overflowX: "auto",
+    }}
+  >
+    {error}
+  </pre>
+)}
 
-            {showTable && finalRows.length > 0 && <ResultsTable previewRows={finalRows} />}
-
-            {finalCsv && (
+{finalCsv && (
               <div
                 style={{
                   borderRadius: 16,
