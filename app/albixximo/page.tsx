@@ -1239,8 +1239,16 @@ function ResultsTable({
           flexWrap: "wrap",
         }}
       >
-        <div style={{ fontWeight: 900, fontSize: exporting ? 15 : undefined }}>{tableTitle}</div>
-        <div style={{ fontSize: exporting ? 13 : 12, opacity: 0.88, fontWeight: exporting ? 800 : undefined }}>
+        <div style={{ fontWeight: 900, fontSize: exporting ? 15 : undefined }}>
+          {tableTitle}
+        </div>
+        <div
+          style={{
+            fontSize: exporting ? 13 : 12,
+            opacity: 0.88,
+            fontWeight: exporting ? 800 : undefined,
+          }}
+        >
           {exporting ? `Partecipanti: ${previewRows.length}` : `${previewRows.length} righe`}
         </div>
       </div>
@@ -1397,44 +1405,38 @@ function ResultsTable({
               const isZeroPointsStatus =
                 rawDistacco === "DNF" || rawDistacco === "BOX" || rawDistacco === "DSQ"
 
-              const basePoints = isZeroPointsStatus ? 0 : getPointsForRow(r)
-
-              const bonusCount = isZeroPointsStatus ? 0 : (isPp ? 1 : 0) + (isGv ? 1 : 0)
-              const stars = bonusCount === 2 ? "✦✦" : bonusCount === 1 ? "✦" : ""
-              const hasBonus = bonusCount > 0
+              const pointsValue = isZeroPointsStatus ? 0 : getPointsForRow(r)
 
               const isP1 = r.posizione === 1
               const isP2 = r.posizione === 2
               const isP3 = r.posizione === 3
+              const isPodium = isP1 || isP2 || isP3
 
-              const pointsBg = isP1
+              const podiumBg = isP1
                 ? "linear-gradient(180deg, rgba(255,215,0,1), rgba(255,200,0,0.95))"
                 : isP2
                   ? "linear-gradient(180deg, rgba(220,220,220,0.96), rgba(185,185,185,0.96))"
-                  : isP3
-                    ? "linear-gradient(180deg, rgba(205,127,50,0.96), rgba(168,102,38,0.96))"
-                    : "linear-gradient(180deg, rgba(205,210,220,0.92), rgba(168,174,185,0.92))"
+                  : "linear-gradient(180deg, rgba(205,127,50,0.96), rgba(168,102,38,0.96))"
 
-              const pointsBorder = isP1
+              const podiumBorder = isP1
                 ? "1px solid rgba(255,215,0,0.55)"
                 : isP2
                   ? "1px solid rgba(220,220,220,0.42)"
-                  : isP3
-                    ? "1px solid rgba(205,127,50,0.45)"
-                    : "1px solid rgba(210,215,225,0.28)"
+                  : "1px solid rgba(205,127,50,0.45)"
 
-              const pointsGlow = isP1
+              const podiumGlow = isP1
                 ? "0 0 18px rgba(255,215,0,0.35)"
                 : isP2
                   ? "0 0 14px rgba(220,220,220,0.22)"
-                  : isP3
-                    ? "0 0 14px rgba(205,127,50,0.22)"
-                    : hasBonus
-                      ? "0 0 14px rgba(210,215,225,0.16)"
-                      : "0 0 8px rgba(210,215,225,0.08)"
+                  : "0 0 14px rgba(205,127,50,0.22)"
+
+              const normalPointsColor = exporting ? "#ffffff" : "#ecfff5"
 
               return (
-                <tr key={`${r.posizione}-${r.nomePilota}-${i}`} style={rowStyleForPos(r.posizione, fallbackBg)}>
+                <tr
+                  key={`${r.posizione}-${r.nomePilota}-${i}`}
+                  style={rowStyleForPos(r.posizione, fallbackBg)}
+                >
                   <TableCell exporting={exporting}>
                     <PosBadge pos={r.posizione} />
                   </TableCell>
@@ -1446,7 +1448,11 @@ function ResultsTable({
                       fontWeight: exporting ? (r.posizione === 1 ? 800 : 700) : undefined,
                       letterSpacing: exporting ? "0.04em" : undefined,
                       color: exporting ? (r.posizione === 1 ? "#fff6cc" : "#ffffff") : undefined,
-                      textShadow: exporting ? (r.posizione === 1 ? "0 0 10px rgba(255,215,0,0.45)" : "none") : undefined,
+                      textShadow: exporting
+                        ? r.posizione === 1
+                          ? "0 0 10px rgba(255,215,0,0.45)"
+                          : "none"
+                        : undefined,
                     }}
                   >
                     {r.nomePilota}
@@ -1560,50 +1566,128 @@ function ResultsTable({
                       fontWeight: 900,
                     }}
                   >
-                    <span
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        gap: 4,
-                        minWidth: exporting ? 30 : 26,
-                        height: exporting ? 20 : 18,
-                        padding: exporting ? "0 8px" : "0 7px",
-                        borderRadius: 999,
-                        background: pointsBg,
-                        border: pointsBorder,
-                        boxShadow: pointsGlow,
-                        color: "rgba(0,0,0,0.95)",
-                        fontWeight: 900,
-                        fontSize: exporting ? 12 : 11,
-                        lineHeight: 1,
-                        transform: "translateY(-1px)",
-                      }}
-                      title={
-                        isZeroPointsStatus
-                          ? "Punti gara: 0"
-                          : bonusCount === 2
-                            ? "Bonus: PP + GV"
-                            : bonusCount === 1
-                              ? `Bonus: ${isPp ? "PP" : "GV"}`
-                              : "Punti gara"
-                      }
-                    >
-                      <span>{basePoints}</span>
+                    {isPodium ? (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 4,
+                          minWidth: exporting ? 30 : 26,
+                          height: exporting ? 20 : 18,
+                          padding: exporting ? "0 8px" : "0 7px",
+                          borderRadius: 999,
+                          background: podiumBg,
+                          border: podiumBorder,
+                          boxShadow: podiumGlow,
+                          color: "rgba(0,0,0,0.95)",
+                          fontWeight: 900,
+                          fontSize: exporting ? 12 : 11,
+                          lineHeight: 1,
+                          transform: "translateY(-1px)",
+                        }}
+                        title={
+                          isZeroPointsStatus
+                            ? "Punti gara: 0"
+                            : isPp && isGv
+                              ? "Bonus: PP + GV"
+                              : isPp
+                                ? "Bonus: PP"
+                                : isGv
+                                  ? "Bonus: GV"
+                                  : "Punti gara"
+                        }
+                      >
+                        <span>{pointsValue}</span>
 
-                      {hasBonus && (
-                        <span
-                          style={{
-                            fontSize: exporting ? 11 : 10,
-                            lineHeight: 1,
-                            transform: "translateY(-1px)",
-                            letterSpacing: bonusCount === 2 ? "-0.5px" : 0,
-                          }}
-                        >
-                          {stars}
-                        </span>
-                      )}
-                    </span>
+                        {isPp && (
+                          <span
+                            style={{
+                              fontSize: exporting ? 11 : 10,
+                              lineHeight: 1,
+                              transform: "translateY(-1px)",
+                              color: "rgba(0,0,0,0.95)",
+                              textShadow: "0 0 8px rgba(255,215,0,0.35)",
+                            }}
+                          >
+                            ✦
+                          </span>
+                        )}
+
+                        {isGv && (
+                          <span
+                            style={{
+                              fontSize: exporting ? 11 : 10,
+                              lineHeight: 1,
+                              transform: "translateY(-1px)",
+                              color: "rgba(90,0,160,0.95)",
+                              textShadow: "0 0 8px rgba(160,90,255,0.28)",
+                            }}
+                          >
+                            ✦
+                          </span>
+                        )}
+                      </span>
+                    ) : (
+                      <span
+                        title={
+                          isZeroPointsStatus
+                            ? "Punti gara: 0"
+                            : isPp && isGv
+                              ? "Bonus: PP + GV"
+                              : isPp
+                                ? "Bonus: PP"
+                                : isGv
+                                  ? "Bonus: GV"
+                                  : "Punti gara"
+                        }
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          gap: 4,
+                          color: normalPointsColor,
+                          fontWeight: 900,
+                          fontSize: exporting ? 16 : 14,
+                          fontFamily:
+                            "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                          letterSpacing: 0.1,
+                          textShadow: exporting
+                            ? "0 0 8px rgba(255,255,255,0.10)"
+                            : "0 0 8px rgba(64,224,208,0.12)",
+                        }}
+                      >
+                        <span>{pointsValue}</span>
+
+                        {isPp && (
+                          <span
+                            style={{
+                              fontSize: exporting ? 12 : 11,
+                              lineHeight: 1,
+                              transform: "translateY(-1px)",
+                              color: "#ffd700",
+                              textShadow: "0 0 8px rgba(255,215,0,0.35)",
+                            }}
+                          >
+                            ✦
+                          </span>
+                        )}
+
+                        {isGv && (
+                          <span
+                            style={{
+                              fontSize: exporting ? 12 : 11,
+                              lineHeight: 1,
+                              transform: "translateY(-1px)",
+                              color: "#b67cff",
+                              textShadow: "0 0 8px rgba(160,90,255,0.30)",
+                            }}
+                          >
+                            ✦
+                          </span>
+                        )}
+                      </span>
+                    )}
                   </TableCell>
                 </tr>
               )
