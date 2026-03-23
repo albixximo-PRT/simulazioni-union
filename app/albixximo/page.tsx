@@ -1569,10 +1569,10 @@ function ResultsTable({
                     {isPodium ? (
                       <span
                         style={{
+                          position: "relative",
                           display: "inline-flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          gap: 4,
                           minWidth: exporting ? 30 : 26,
                           height: exporting ? 20 : 18,
                           padding: exporting ? "0 8px" : "0 7px",
@@ -1600,31 +1600,39 @@ function ResultsTable({
                       >
                         <span>{pointsValue}</span>
 
-                        {isPp && (
+                        {(isPp || isGv) && (
                           <span
                             style={{
-                              fontSize: exporting ? 11 : 10,
+                              position: "absolute",
+                              top: exporting ? -6 : -5,
+                              right: exporting ? -10 : -8,
+                              display: "flex",
+                              gap: 1,
+                              fontSize: exporting ? 10 : 9,
                               lineHeight: 1,
-                              transform: "translateY(-1px)",
-                              color: "rgba(0,0,0,0.95)",
-                              textShadow: "0 0 8px rgba(255,215,0,0.35)",
                             }}
                           >
-                            ✦
-                          </span>
-                        )}
+                            {isPp && (
+                              <span
+                                style={{
+                                  color: "#ffd700",
+                                  textShadow: "0 0 6px rgba(255,215,0,0.45)",
+                                }}
+                              >
+                                ★
+                              </span>
+                            )}
 
-                        {isGv && (
-                          <span
-                            style={{
-                              fontSize: exporting ? 11 : 10,
-                              lineHeight: 1,
-                              transform: "translateY(-1px)",
-                              color: "rgba(90,0,160,0.95)",
-                              textShadow: "0 0 8px rgba(160,90,255,0.28)",
-                            }}
-                          >
-                            ✦
+                            {isGv && (
+                              <span
+                                style={{
+                                  color: "#b67cff",
+                                  textShadow: "0 0 6px rgba(160,90,255,0.45)",
+                                }}
+                              >
+                                ★
+                              </span>
+                            )}
                           </span>
                         )}
                       </span>
@@ -1642,10 +1650,11 @@ function ResultsTable({
                                   : "Punti gara"
                         }
                         style={{
+                          position: "relative",
                           display: "inline-flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          gap: 4,
+                          minWidth: exporting ? 30 : 26,
                           color: normalPointsColor,
                           fontWeight: 900,
                           fontSize: exporting ? 16 : 14,
@@ -1659,31 +1668,39 @@ function ResultsTable({
                       >
                         <span>{pointsValue}</span>
 
-                        {isPp && (
+                        {(isPp || isGv) && (
                           <span
                             style={{
-                              fontSize: exporting ? 12 : 11,
+                              position: "absolute",
+                              top: exporting ? -6 : -5,
+                              right: exporting ? -10 : -8,
+                              display: "flex",
+                              gap: 1,
+                              fontSize: exporting ? 10 : 9,
                               lineHeight: 1,
-                              transform: "translateY(-1px)",
-                              color: "#ffd700",
-                              textShadow: "0 0 8px rgba(255,215,0,0.35)",
                             }}
                           >
-                            ✦
-                          </span>
-                        )}
+                            {isPp && (
+                              <span
+                                style={{
+                                  color: "#ffd700",
+                                  textShadow: "0 0 6px rgba(255,215,0,0.45)",
+                                }}
+                              >
+                                ★
+                              </span>
+                            )}
 
-                        {isGv && (
-                          <span
-                            style={{
-                              fontSize: exporting ? 12 : 11,
-                              lineHeight: 1,
-                              transform: "translateY(-1px)",
-                              color: "#b67cff",
-                              textShadow: "0 0 8px rgba(160,90,255,0.30)",
-                            }}
-                          >
-                            ✦
+                            {isGv && (
+                              <span
+                                style={{
+                                  color: "#b67cff",
+                                  textShadow: "0 0 6px rgba(160,90,255,0.45)",
+                                }}
+                              >
+                                ★
+                              </span>
+                            )}
                           </span>
                         )}
                       </span>
