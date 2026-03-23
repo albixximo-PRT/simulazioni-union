@@ -1239,9 +1239,7 @@ function ResultsTable({
           flexWrap: "wrap",
         }}
       >
-        <div style={{ fontWeight: 900, fontSize: exporting ? 15 : undefined }}>
-          {tableTitle}
-        </div>
+        <div style={{ fontWeight: 900, fontSize: exporting ? 15 : undefined }}>{tableTitle}</div>
         <div style={{ fontSize: exporting ? 13 : 12, opacity: 0.88, fontWeight: exporting ? 800 : undefined }}>
           {exporting ? `Partecipanti: ${previewRows.length}` : `${previewRows.length} righe`}
         </div>
@@ -1265,28 +1263,143 @@ function ResultsTable({
             }}
           >
             <tr>
-              <th style={{ padding: "12px", width: 60 }}>#</th>
-              <th style={{ padding: "12px", width: exporting ? 220 : 190 }}>Nome pilota</th>
-              <th style={{ padding: "12px", width: exporting ? 270 : 240 }}>Auto</th>
-              <th style={{ padding: "12px", width: exporting ? 170 : 145, textAlign: "right" }}>Distacchi</th>
-              <th style={{ padding: "12px", width: exporting ? 90 : 76 }}>PP</th>
-              <th style={{ padding: "12px", width: exporting ? 90 : 76 }}>GV</th>
-              <th style={{ padding: "12px", width: exporting ? 170 : 150 }}>DG</th>
-              <th style={{ padding: "12px", width: exporting ? 90 : 74 }}>Gara</th>
-              <th style={{ padding: "12px", width: exporting ? 90 : 74 }}>Lobby</th>
-              <th style={{ padding: "12px", width: exporting ? 140 : 115 }}>Lega</th>
-              <th style={{ padding: "12px", width: exporting ? 80 : 64 }}>Punti</th>
+              <th
+                style={{
+                  padding: exporting ? "11px 13px" : "12px 12px",
+                  textAlign: "left",
+                  fontSize: exporting ? 16 : 12,
+                  opacity: 0.8,
+                  width: 60,
+                }}
+              >
+                #
+              </th>
+              <th
+                style={{
+                  padding: exporting ? "11px 13px" : "12px 12px",
+                  textAlign: "left",
+                  fontSize: exporting ? 16 : 12,
+                  opacity: 0.8,
+                  width: exporting ? 220 : 190,
+                }}
+              >
+                Nome pilota
+              </th>
+              <th
+                style={{
+                  padding: exporting ? "11px 13px" : "12px 12px",
+                  textAlign: "left",
+                  fontSize: exporting ? 16 : 12,
+                  opacity: 0.8,
+                  width: exporting ? 270 : 240,
+                }}
+              >
+                Auto
+              </th>
+              <th
+                style={{
+                  padding: exporting ? "11px 13px" : "12px 12px",
+                  textAlign: "right",
+                  fontSize: exporting ? 16 : 12,
+                  opacity: 0.8,
+                  width: exporting ? 170 : 145,
+                }}
+              >
+                Distacchi
+              </th>
+              <th
+                style={{
+                  padding: exporting ? "11px 13px" : "12px 12px",
+                  textAlign: "center",
+                  fontSize: exporting ? 16 : 12,
+                  opacity: 0.8,
+                  width: exporting ? 90 : 76,
+                }}
+              >
+                PP
+              </th>
+              <th
+                style={{
+                  padding: exporting ? "11px 13px" : "12px 12px",
+                  textAlign: "center",
+                  fontSize: exporting ? 16 : 12,
+                  opacity: 0.8,
+                  width: exporting ? 90 : 76,
+                }}
+              >
+                GV
+              </th>
+              <th
+                style={{
+                  padding: exporting ? "11px 13px" : "12px 12px",
+                  textAlign: "center",
+                  fontSize: exporting ? 16 : 12,
+                  opacity: 0.8,
+                  width: exporting ? 170 : 150,
+                }}
+              >
+                DG
+              </th>
+              <th
+                style={{
+                  padding: exporting ? "11px 13px" : "12px 12px",
+                  textAlign: "center",
+                  fontSize: exporting ? 16 : 12,
+                  opacity: 0.8,
+                  width: exporting ? 90 : 74,
+                }}
+              >
+                Gara
+              </th>
+              <th
+                style={{
+                  padding: exporting ? "11px 13px" : "12px 12px",
+                  textAlign: "center",
+                  fontSize: exporting ? 16 : 12,
+                  opacity: 0.8,
+                  width: exporting ? 90 : 74,
+                }}
+              >
+                Lobby
+              </th>
+              <th
+                style={{
+                  padding: exporting ? "11px 13px" : "12px 12px",
+                  textAlign: "center",
+                  fontSize: exporting ? 16 : 12,
+                  opacity: 0.8,
+                  width: exporting ? 140 : 115,
+                }}
+              >
+                Lega
+              </th>
+              <th
+                style={{
+                  padding: exporting ? "11px 13px" : "12px 12px",
+                  textAlign: "center",
+                  fontSize: exporting ? 16 : 12,
+                  opacity: 0.8,
+                  width: exporting ? 86 : 70,
+                }}
+              >
+                Punti
+              </th>
             </tr>
           </thead>
 
           <tbody>
             {previewRows.map((r, i) => {
-              const isPP = (r.pp || "").toUpperCase() === "PP"
-              const isGV = (r.gv || "").toUpperCase() === "GV"
+              const isPp = (r.pp || "").trim().toUpperCase() === "PP"
+              const isGv = (r.gv || "").trim().toUpperCase() === "GV"
+              const fallbackBg = i % 2 === 0 ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.10)"
 
-              const points = getPointsForRow(r)
+              const rawDistacco = String(r.distacchi || "").trim().toUpperCase()
+              const isZeroPointsStatus =
+                rawDistacco === "DNF" || rawDistacco === "BOX" || rawDistacco === "DSQ"
 
-              const bonusCount = (isPP ? 1 : 0) + (isGV ? 1 : 0)
+              const basePoints = isZeroPointsStatus ? 0 : getPointsForRow(r)
+
+              const bonusCount = isZeroPointsStatus ? 0 : (isPp ? 1 : 0) + (isGv ? 1 : 0)
               const stars = bonusCount === 2 ? "✦✦" : bonusCount === 1 ? "✦" : ""
               const hasBonus = bonusCount > 0
 
@@ -1294,59 +1407,202 @@ function ResultsTable({
               const isP2 = r.posizione === 2
               const isP3 = r.posizione === 3
 
-              const baseBg = isP1
+              const pointsBg = isP1
                 ? "linear-gradient(180deg, rgba(255,215,0,1), rgba(255,200,0,0.95))"
                 : isP2
-                ? "linear-gradient(180deg, rgba(220,220,220,0.95), rgba(180,180,180,0.95))"
-                : isP3
-                ? "linear-gradient(180deg, rgba(205,127,50,0.95), rgba(160,100,40,0.95))"
-                : "rgba(255,215,0,0.75)"
+                  ? "linear-gradient(180deg, rgba(220,220,220,0.96), rgba(185,185,185,0.96))"
+                  : isP3
+                    ? "linear-gradient(180deg, rgba(205,127,50,0.96), rgba(168,102,38,0.96))"
+                    : "linear-gradient(180deg, rgba(205,210,220,0.92), rgba(168,174,185,0.92))"
 
-              const glow = isP1
+              const pointsBorder = isP1
+                ? "1px solid rgba(255,215,0,0.55)"
+                : isP2
+                  ? "1px solid rgba(220,220,220,0.42)"
+                  : isP3
+                    ? "1px solid rgba(205,127,50,0.45)"
+                    : "1px solid rgba(210,215,225,0.28)"
+
+              const pointsGlow = isP1
                 ? "0 0 18px rgba(255,215,0,0.35)"
                 : isP2
-                ? "0 0 14px rgba(220,220,220,0.25)"
-                : isP3
-                ? "0 0 14px rgba(205,127,50,0.25)"
-                : hasBonus
-                ? "0 0 18px rgba(255,215,0,0.28)"
-                : "0 0 10px rgba(255,215,0,0.12)"
+                  ? "0 0 14px rgba(220,220,220,0.22)"
+                  : isP3
+                    ? "0 0 14px rgba(205,127,50,0.22)"
+                    : hasBonus
+                      ? "0 0 14px rgba(210,215,225,0.16)"
+                      : "0 0 8px rgba(210,215,225,0.08)"
 
               return (
-                <tr key={i}>
-                  <TableCell><PosBadge pos={r.posizione} /></TableCell>
-                  <TableCell>{r.nomePilota}</TableCell>
-                  <TableCell>{r.auto}</TableCell>
-                  <TableCell align="right">{renderDistaccoCell(r.distacchi)}</TableCell>
-                  <TableCell align="center">{isPP ? <Pill left="PP" variant="gold" /> : "-"}</TableCell>
-                  <TableCell align="center">{isGV ? <Pill left="GV" variant="violet" /> : "-"}</TableCell>
-                  <TableCell align="center">{renderDGCell(r.dgKind, r.dgSeconds)}</TableCell>
-                  <TableCell align="center">{r.gara}</TableCell>
-                  <TableCell align="center">{r.lobby}</TableCell>
-                  <TableCell align="center">{r.lega}</TableCell>
+                <tr key={`${r.posizione}-${r.nomePilota}-${i}`} style={rowStyleForPos(r.posizione, fallbackBg)}>
+                  <TableCell exporting={exporting}>
+                    <PosBadge pos={r.posizione} />
+                  </TableCell>
 
-                  {/* 🔥 PUNTI */}
-                  <TableCell align="center">
+                  <TableCell
+                    exporting={exporting}
+                    style={{
+                      fontSize: exporting ? 18 : undefined,
+                      fontWeight: exporting ? (r.posizione === 1 ? 800 : 700) : undefined,
+                      letterSpacing: exporting ? "0.04em" : undefined,
+                      color: exporting ? (r.posizione === 1 ? "#fff6cc" : "#ffffff") : undefined,
+                      textShadow: exporting ? (r.posizione === 1 ? "0 0 10px rgba(255,215,0,0.45)" : "none") : undefined,
+                    }}
+                  >
+                    {r.nomePilota}
+                  </TableCell>
+
+                  <TableCell
+                    exporting={exporting}
+                    dim={!r.auto}
+                    style={{
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                      fontSize: exporting ? 17 : undefined,
+                    }}
+                  >
+                    {r.auto || "-"}
+                  </TableCell>
+
+                  <TableCell
+                    exporting={exporting}
+                    align="right"
+                    mono
+                    style={{
+                      whiteSpace: "nowrap",
+                      fontSize: exporting ? 17 : undefined,
+                    }}
+                  >
+                    {renderDistaccoCell(r.distacchi, exporting)}
+                  </TableCell>
+
+                  <TableCell exporting={exporting} align="center" mono dim={!isPp}>
+                    {isPp ? <Pill left="PP" variant="gold" exporting={exporting} /> : "-"}
+                  </TableCell>
+
+                  <TableCell exporting={exporting} align="center" mono dim={!isGv}>
+                    {isGv ? <Pill left="GV" variant="violet" exporting={exporting} /> : "-"}
+                  </TableCell>
+
+                  <TableCell
+                    exporting={exporting}
+                    align="center"
+                    mono
+                    dim={!r.dgKind || r.dgKind === "-"}
+                    style={{
+                      whiteSpace: "nowrap",
+                      fontSize: exporting ? 12 : 11,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {renderDGCell(r.dgKind, r.dgSeconds, exporting)}
+                  </TableCell>
+
+                  <TableCell
+                    exporting={exporting}
+                    align="center"
+                    mono
+                    dim={!r.gara}
+                    style={{
+                      borderBottom: "1px solid rgba(255,255,255,0.08)",
+                    }}
+                  >
+                    {String(r.gara).trim() === "-" ? (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          minWidth: exporting ? 34 : 28,
+                          height: exporting ? 28 : 24,
+                          padding: exporting ? "0 10px" : "0 8px",
+                          borderRadius: 999,
+                          background: "rgba(255,165,0,0.16)",
+                          border: "1px solid rgba(255,165,0,0.32)",
+                          boxShadow: "0 0 10px rgba(255,165,0,0.12)",
+                          color: "#fff3e0",
+                          fontWeight: 900,
+                          lineHeight: 1,
+                        }}
+                      >
+                        -
+                      </span>
+                    ) : (
+                      r.gara || "-"
+                    )}
+                  </TableCell>
+
+                  <TableCell exporting={exporting} align="center" mono dim={!r.lobby}>
+                    {r.lobby || "-"}
+                  </TableCell>
+
+                  <TableCell
+                    exporting={exporting}
+                    align="center"
+                    mono
+                    dim={!r.lega}
+                    style={{
+                      whiteSpace: "nowrap",
+                      fontSize: exporting ? 15 : 12,
+                    }}
+                  >
+                    {r.lega || "-"}
+                  </TableCell>
+
+                  <TableCell
+                    exporting={exporting}
+                    align="center"
+                    mono
+                    style={{
+                      whiteSpace: "nowrap",
+                      fontSize: exporting ? 16 : 13,
+                      fontWeight: 900,
+                    }}
+                  >
                     <span
                       style={{
                         display: "inline-flex",
                         alignItems: "center",
                         justifyContent: "center",
                         gap: 4,
-                        minWidth: 20,
-                        height: 18,
-                        padding: "0 7px",
+                        minWidth: exporting ? 30 : 26,
+                        height: exporting ? 20 : 18,
+                        padding: exporting ? "0 8px" : "0 7px",
                         borderRadius: 999,
-                        background: baseBg,
-                        border: "1px solid rgba(255,215,0,0.55)",
-                        boxShadow: glow,
-                        color: "black",
+                        background: pointsBg,
+                        border: pointsBorder,
+                        boxShadow: pointsGlow,
+                        color: "rgba(0,0,0,0.95)",
                         fontWeight: 900,
-                        fontSize: 11,
+                        fontSize: exporting ? 12 : 11,
+                        lineHeight: 1,
+                        transform: "translateY(-1px)",
                       }}
+                      title={
+                        isZeroPointsStatus
+                          ? "Punti gara: 0"
+                          : bonusCount === 2
+                            ? "Bonus: PP + GV"
+                            : bonusCount === 1
+                              ? `Bonus: ${isPp ? "PP" : "GV"}`
+                              : "Punti gara"
+                      }
                     >
-                      {points}
-                      {hasBonus && <span style={{ fontSize: 10 }}>{stars}</span>}
+                      <span>{basePoints}</span>
+
+                      {hasBonus && (
+                        <span
+                          style={{
+                            fontSize: exporting ? 11 : 10,
+                            lineHeight: 1,
+                            transform: "translateY(-1px)",
+                            letterSpacing: bonusCount === 2 ? "-0.5px" : 0,
+                          }}
+                        >
+                          {stars}
+                        </span>
+                      )}
                     </span>
                   </TableCell>
                 </tr>
