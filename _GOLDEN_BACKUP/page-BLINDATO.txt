@@ -1838,31 +1838,61 @@ export default function Page() {
   }, [displayRows, dgKinds, dgSeconds, dgLapOverrides])
 
   const finalCsv = useMemo(() => {
-    if (!finalRows.length) return ""
+  if (!finalRows.length) return ""
 
-    const header = "#,Nome pilota,Auto,Distacchi,-PP-,-GV-,Gara,Lobby,Lega"
+  const header = "#,Nome pilota,Auto,Distacchi,-PP-,-GV-,Gara,Lobby,Lega"
 
-    const body = finalRows.map((r) =>
-      [
-        r.posizione,
-        r.nomePilota,
-        r.auto,
-        r.distacchi,
-        r.pp,
-        r.gv,
-        r.gara,
-        r.lobby,
-        r.lega,
-      ]
-        .map((value) => {
-          const s = String(value ?? "").replace(/"/g, '""')
-          return s.includes(",") ? `"${s}"` : s
-        })
-        .join(",")
-    )
+  let dnfCount = 0
+  let boxCount = 0
+  let previousGapMs = 0
 
-    return [header, ...body].join("\n")
-  }, [finalRows])
+  const body = finalRows.map((r, index) => {
+    const rawDistacco = String(r.distacchi || "").trim().toUpperCase()
+    let csvDistacco = String(r.distacchi || "").trim()
+
+    if (index === 0) {
+      previousGapMs = 0
+    } else if (rawDistacco.startsWith("+")) {
+      const parsedGap = parseGapToLeaderMs(rawDistacco)
+      if (parsedGap != null) {
+        previousGapMs = parsedGap
+      }
+      csvDistacco = String(r.distacchi || "").trim()
+    } else if (isDoppiatoValue(rawDistacco)) {
+      previousGapMs += 10000
+      csvDistacco = formatGapFromLeaderMs(previousGapMs)
+    } else if (rawDistacco === "DNF") {
+      csvDistacco = formatRaceTimeFromMs(3600000 + dnfCount * 60000)
+      dnfCount++
+    } else if (rawDistacco === "BOX") {
+      csvDistacco = formatRaceTimeFromMs(7200000 + boxCount * 60000)
+      boxCount++
+    } else if (rawDistacco === "DSQ") {
+      csvDistacco = "DSQ"
+    } else {
+      csvDistacco = String(r.distacchi || "").trim()
+    }
+
+    return [
+      r.posizione,
+      r.nomePilota,
+      r.auto,
+      csvDistacco,
+      r.pp,
+      r.gv,
+      r.gara,
+      r.lobby,
+      r.lega,
+    ]
+      .map((value) => {
+        const s = String(value ?? "").replace(/"/g, '""')
+        return s.includes(",") ? `"${s}"` : s
+      })
+      .join(",")
+  })
+
+  return [header, ...body].join("\n")
+}, [finalRows])
 
   function openAutoCorrectionModal() {
     const nextDraft: Record<number, string> = {}
@@ -2805,7 +2835,10 @@ export default function Page() {
 
             {/* TABELLONA RISULTATI SUBITO DOPO ESTRAZIONE */}
 {showTable && finalRows.length > 0 && (
-  <ResultsTable previewRows={finalRows} />
+  <ResultsTable
+  previewRows={finalRows}
+  tableTitle={`Classifica definitiva Union - ${unionMeta.lega ? unionMeta.lega + " " : ""}Lobby ${formatLobbyShort(unionMeta.lobby)} Gara ${effectiveGara || "-"}`}
+/>
 )}
 
 {/* DIREZIONE GARA DOPO LA TABELLA */}
@@ -3104,24 +3137,22 @@ export default function Page() {
             )}
 
             {error && (
-              <pre
-                style={{
-                  whiteSpace: "pre-wrap",
-                  color: "#ff6b6b",
-                  background: "rgba(0,0,0,0.35)",
-                  border: "1px solid rgba(255,255,255,0.10)",
-                  padding: 12,
-                  borderRadius: 14,
-                  overflowX: "auto",
-                }}
-              >
-                {error}
-              </pre>
-            )}
+  <pre
+    style={{
+      whiteSpace: "pre-wrap",
+      color: "#ff6b6b",
+      background: "rgba(0,0,0,0.35)",
+      border: "1px solid rgba(255,255,255,0.10)",
+      padding: 12,
+      borderRadius: 14,
+      overflowX: "auto",
+    }}
+  >
+    {error}
+  </pre>
+)}
 
-            {showTable && finalRows.length > 0 && <ResultsTable previewRows={finalRows} />}
-
-            {finalCsv && (
+{finalCsv && (
               <div
                 style={{
                   borderRadius: 16,
@@ -3561,10 +3592,10 @@ export default function Page() {
               />
 
               <ResultsTable
-                previewRows={finalRows}
-                exporting={true}
-                tableTitle="Classifica Union"
-              />
+  previewRows={finalRows}
+  exporting={true}
+  tableTitle={`Classifica definitiva Union - ${unionMeta.lega ? unionMeta.lega + " " : ""}Lobby ${formatLobbyShort(unionMeta.lobby)}${effectiveGara ? ` Gara ${effectiveGara}` : ""}`}
+/>
             </div>
           )}
         </div>

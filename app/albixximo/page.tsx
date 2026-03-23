@@ -580,6 +580,37 @@ function buildUnionMatchSummary({
   }
 }
 
+/* ===================== PUNTI UNION ===================== */
+
+function getPointsForRow(row: UnionRow): number {
+  const basePoints: Record<number, number> = {
+    1: 30,
+    2: 26,
+    3: 22,
+    4: 18,
+    5: 16,
+    6: 14,
+    7: 12,
+    8: 10,
+    9: 8,
+    10: 6,
+    11: 4,
+    12: 2,
+    13: 1,
+    14: 0,
+  }
+
+  let points = basePoints[row.posizione] ?? 0
+
+  const isPP = String(row.pp || "").trim().toUpperCase() === "PP"
+  const isGV = String(row.gv || "").trim().toUpperCase() === "GV"
+
+  if (isPP) points += 1
+  if (isGV) points += 1
+
+  return points
+}
+
 function TableCell({
   children,
   align,
@@ -1208,7 +1239,9 @@ function ResultsTable({
           flexWrap: "wrap",
         }}
       >
-        <div style={{ fontWeight: 900, fontSize: exporting ? 15 : undefined }}>{tableTitle}</div>
+        <div style={{ fontWeight: 900, fontSize: exporting ? 15 : undefined }}>
+          {tableTitle}
+        </div>
         <div style={{ fontSize: exporting ? 13 : 12, opacity: 0.88, fontWeight: exporting ? 800 : undefined }}>
           {exporting ? `Partecipanti: ${previewRows.length}` : `${previewRows.length} righe`}
         </div>
@@ -1232,160 +1265,89 @@ function ResultsTable({
             }}
           >
             <tr>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: 60 }}>
-                #
-              </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 220 : 190 }}>
-                Nome pilota
-              </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 300 : 270 }}>
-                Auto
-              </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "right", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 170 : 145 }}>
-                Distacchi
-              </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 90 : 76 }}>
-                PP
-              </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 90 : 76 }}>
-                GV
-              </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 170 : 150 }}>
-                DG
-              </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 90 : 74 }}>
-                Gara
-              </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 90 : 74 }}>
-                Lobby
-              </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 150 : 125 }}>
-                Lega
-              </th>
+              <th style={{ padding: "12px", width: 60 }}>#</th>
+              <th style={{ padding: "12px", width: exporting ? 220 : 190 }}>Nome pilota</th>
+              <th style={{ padding: "12px", width: exporting ? 270 : 240 }}>Auto</th>
+              <th style={{ padding: "12px", width: exporting ? 170 : 145, textAlign: "right" }}>Distacchi</th>
+              <th style={{ padding: "12px", width: exporting ? 90 : 76 }}>PP</th>
+              <th style={{ padding: "12px", width: exporting ? 90 : 76 }}>GV</th>
+              <th style={{ padding: "12px", width: exporting ? 170 : 150 }}>DG</th>
+              <th style={{ padding: "12px", width: exporting ? 90 : 74 }}>Gara</th>
+              <th style={{ padding: "12px", width: exporting ? 90 : 74 }}>Lobby</th>
+              <th style={{ padding: "12px", width: exporting ? 140 : 115 }}>Lega</th>
+              <th style={{ padding: "12px", width: exporting ? 80 : 64 }}>Punti</th>
             </tr>
           </thead>
 
           <tbody>
             {previewRows.map((r, i) => {
-              const isPp = (r.pp || "").trim().toUpperCase() === "PP"
-              const isGv = (r.gv || "").trim().toUpperCase() === "GV"
-              const fallbackBg = i % 2 === 0 ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.10)"
+              const isPP = (r.pp || "").toUpperCase() === "PP"
+              const isGV = (r.gv || "").toUpperCase() === "GV"
+
+              const points = getPointsForRow(r)
+
+              const bonusCount = (isPP ? 1 : 0) + (isGV ? 1 : 0)
+              const stars = bonusCount === 2 ? "✦✦" : bonusCount === 1 ? "✦" : ""
+              const hasBonus = bonusCount > 0
+
+              const isP1 = r.posizione === 1
+              const isP2 = r.posizione === 2
+              const isP3 = r.posizione === 3
+
+              const baseBg = isP1
+                ? "linear-gradient(180deg, rgba(255,215,0,1), rgba(255,200,0,0.95))"
+                : isP2
+                ? "linear-gradient(180deg, rgba(220,220,220,0.95), rgba(180,180,180,0.95))"
+                : isP3
+                ? "linear-gradient(180deg, rgba(205,127,50,0.95), rgba(160,100,40,0.95))"
+                : "rgba(255,215,0,0.75)"
+
+              const glow = isP1
+                ? "0 0 18px rgba(255,215,0,0.35)"
+                : isP2
+                ? "0 0 14px rgba(220,220,220,0.25)"
+                : isP3
+                ? "0 0 14px rgba(205,127,50,0.25)"
+                : hasBonus
+                ? "0 0 18px rgba(255,215,0,0.28)"
+                : "0 0 10px rgba(255,215,0,0.12)"
 
               return (
-                <tr key={`${r.posizione}-${r.nomePilota}-${i}`} style={rowStyleForPos(r.posizione, fallbackBg)}>
-                  <TableCell exporting={exporting}>
-                    <PosBadge pos={r.posizione} />
-                  </TableCell>
+                <tr key={i}>
+                  <TableCell><PosBadge pos={r.posizione} /></TableCell>
+                  <TableCell>{r.nomePilota}</TableCell>
+                  <TableCell>{r.auto}</TableCell>
+                  <TableCell align="right">{renderDistaccoCell(r.distacchi)}</TableCell>
+                  <TableCell align="center">{isPP ? <Pill left="PP" variant="gold" /> : "-"}</TableCell>
+                  <TableCell align="center">{isGV ? <Pill left="GV" variant="violet" /> : "-"}</TableCell>
+                  <TableCell align="center">{renderDGCell(r.dgKind, r.dgSeconds)}</TableCell>
+                  <TableCell align="center">{r.gara}</TableCell>
+                  <TableCell align="center">{r.lobby}</TableCell>
+                  <TableCell align="center">{r.lega}</TableCell>
 
-                  <TableCell
-                    exporting={exporting}
-                    style={{
-                      fontSize: exporting ? 18 : undefined,
-                      fontWeight: exporting ? (r.posizione === 1 ? 800 : 700) : undefined,
-                      letterSpacing: exporting ? "0.04em" : undefined,
-                      color: exporting ? (r.posizione === 1 ? "#fff6cc" : "#ffffff") : undefined,
-                      textShadow: exporting ? (r.posizione === 1 ? "0 0 10px rgba(255,215,0,0.45)" : "none") : undefined,
-                    }}
-                  >
-                    {r.nomePilota}
-                  </TableCell>
-
-                  <TableCell
-                    exporting={exporting}
-                    dim={!r.auto}
-                    style={{
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                      fontSize: exporting ? 17 : undefined,
-                    }}
-                  >
-                    {r.auto || "-"}
-                  </TableCell>
-
-                  <TableCell
-                    exporting={exporting}
-                    align="right"
-                    mono
-                    style={{
-                      whiteSpace: "nowrap",
-                      fontSize: exporting ? 17 : undefined,
-                    }}
-                  >
-                    {renderDistaccoCell(r.distacchi, exporting)}
-                  </TableCell>
-
-                  <TableCell exporting={exporting} align="center" mono dim={!isPp}>
-                    {isPp ? <Pill left="PP" variant="gold" exporting={exporting} /> : "-"}
-                  </TableCell>
-
-                  <TableCell exporting={exporting} align="center" mono dim={!isGv}>
-                    {isGv ? <Pill left="GV" variant="violet" exporting={exporting} /> : "-"}
-                  </TableCell>
-
-                  <TableCell
-                    exporting={exporting}
-                    align="center"
-                    mono
-                    dim={!r.dgKind || r.dgKind === "-"}
-                    style={{
-                      whiteSpace: "nowrap",
-                      fontSize: exporting ? 12 : 11,
-                      lineHeight: 1,
-                    }}
-                  >
-                    {renderDGCell(r.dgKind, r.dgSeconds, exporting)}
-                  </TableCell>
-
-                  <TableCell
-                    exporting={exporting}
-                    align="center"
-                    mono
-                    dim={!r.gara}
-                    style={{
-                      borderBottom: "1px solid rgba(255,255,255,0.08)",
-                    }}
-                  >
-                    {String(r.gara).trim() === "-" ? (
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          minWidth: exporting ? 34 : 28,
-                          height: exporting ? 28 : 24,
-                          padding: exporting ? "0 10px" : "0 8px",
-                          borderRadius: 999,
-                          background: "rgba(255,165,0,0.16)",
-                          border: "1px solid rgba(255,165,0,0.32)",
-                          boxShadow: "0 0 10px rgba(255,165,0,0.12)",
-                          color: "#fff3e0",
-                          fontWeight: 900,
-                          lineHeight: 1,
-                        }}
-                      >
-                        -
-                      </span>
-                    ) : (
-                      r.gara || "-"
-                    )}
-                  </TableCell>
-
-                  <TableCell exporting={exporting} align="center" mono dim={!r.lobby}>
-                    {r.lobby || "-"}
-                  </TableCell>
-
-                  <TableCell
-                    exporting={exporting}
-                    align="center"
-                    mono
-                    dim={!r.lega}
-                    style={{
-                      whiteSpace: "nowrap",
-                      fontSize: exporting ? 15 : 12,
-                    }}
-                  >
-                    {r.lega || "-"}
+                  {/* 🔥 PUNTI */}
+                  <TableCell align="center">
+                    <span
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: 4,
+                        minWidth: 20,
+                        height: 18,
+                        padding: "0 7px",
+                        borderRadius: 999,
+                        background: baseBg,
+                        border: "1px solid rgba(255,215,0,0.55)",
+                        boxShadow: glow,
+                        color: "black",
+                        fontWeight: 900,
+                        fontSize: 11,
+                      }}
+                    >
+                      {points}
+                      {hasBonus && <span style={{ fontSize: 10 }}>{stars}</span>}
+                    </span>
                   </TableCell>
                 </tr>
               )
