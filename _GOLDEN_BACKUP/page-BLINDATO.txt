@@ -50,11 +50,38 @@ type MatchSummary = {
   notes: string[]
 }
 
+type DGKind = "-" | "P" | "S" | "DSQ"
+
+type DGRowComputed = UnionRow & {
+  dgKind?: DGKind
+  dgSeconds?: number
+  dgLabel?: string
+  computedRaceMs?: number | null
+  computedNonComparable?: boolean
+  computedDsq?: boolean
+}
+
 const DEFAULT_EXPORT_TEXTS: ExportTexts = {
   mainTitle: "ALBIXXIMO UNION TOOLS",
   sideLabel: "UNION CSV EXTRACTOR",
   subtitle: "PRT Timing Assistant",
 }
+
+const DG_SECOND_OPTIONS = [
+  "-",
+  "5",
+  "10",
+  "15",
+  "20",
+  "25",
+  "30",
+  "35",
+  "40",
+  "45",
+  "50",
+  "55",
+  "60",
+] as const
 
 function formatLobbyShort(lobby: string) {
   const raw = String(lobby || "").trim()
@@ -83,6 +110,10 @@ function sameDriverForMatch(a: string, b: string) {
 
 function normalizeSimpleValue(value: string) {
   return String(value || "").trim().toLowerCase()
+}
+
+function normalizePilotKey(value: string) {
+  return normalizeMatchName(value)
 }
 
 function isClearlySuspiciousCar(value: string): boolean {
@@ -156,6 +187,7 @@ function isUnionDistaccoValid(value: string, posizione: number) {
   if (v.toUpperCase() === "BOX") return true
   if (v.toUpperCase() === "DNF") return true
   if (v.toUpperCase() === "DOPPIATO") return true
+  if (/^\d+giro$/i.test(v)) return true
   if (/^\+\d+\.\d{3}$/.test(v)) return true
   if (/^\+\d+:\d{2}\.\d{3}$/.test(v)) return true
   if (/^(?:\d+:)?\d{1,2}:\d{2}\.\d{3}$/.test(v)) return true
@@ -218,6 +250,122 @@ function matchCellStyle(status: MatchFieldStatus): React.CSSProperties {
     boxShadow: "0 0 12px rgba(255,80,80,0.14)",
     color: "#fff1f1",
   }
+}
+
+function parseLeaderRaceTimeMs(value: string): number | null {
+  const v = String(value || "").trim()
+  if (!v) return null
+
+  const hms = v.match(/^(\d+):(\d{2}):(\d{2})\.(\d{3})$/)
+  if (hms) {
+    const hh = Number(hms[1])
+    const mm = Number(hms[2])
+    const ss = Number(hms[3])
+    const ms = Number(hms[4])
+    if ([hh, mm, ss, ms].some(Number.isNaN)) return null
+    return (hh * 3600 + mm * 60 + ss) * 1000 + ms
+  }
+
+  const msOnly = v.match(/^(\d+):(\d{2})\.(\d{3})$/)
+  if (msOnly) {
+    const mm = Number(msOnly[1])
+    const ss = Number(msOnly[2])
+    const ms = Number(msOnly[3])
+    if ([mm, ss, ms].some(Number.isNaN)) return null
+    return (mm * 60 + ss) * 1000 + ms
+  }
+
+  return null
+}
+
+function parseGapToLeaderMs(value: string): number | null {
+  const v = String(value || "").trim()
+  if (!v) return null
+
+  const normalized = v.replace(/\s+/g, "")
+
+  const mmss = normalized.match(/^\+(\d+):(\d{2})\.(\d{3})$/)
+  if (mmss) {
+    const mm = Number(mmss[1])
+    const ss = Number(mmss[2])
+    const ms = Number(mmss[3])
+    if ([mm, ss, ms].some(Number.isNaN)) return null
+    return (mm * 60 + ss) * 1000 + ms
+  }
+
+  const ssOnly = normalized.match(/^\+(\d+)\.(\d{3})$/)
+  if (ssOnly) {
+    const ss = Number(ssOnly[1])
+    const ms = Number(ssOnly[2])
+    if ([ss, ms].some(Number.isNaN)) return null
+    return ss * 1000 + ms
+  }
+
+  return null
+}
+
+function parseManualGapMs(value: string): number | null {
+  const v = String(value || "").trim()
+  if (!v) return null
+
+  const match = v.match(/^(\d+):(\d{2})\.(\d{3})$/)
+  if (!match) return null
+
+  const mm = Number(match[1])
+  const ss = Number(match[2])
+  const ms = Number(match[3])
+
+  if ([mm, ss, ms].some(Number.isNaN)) return null
+  return (mm * 60 + ss) * 1000 + ms
+}
+
+function formatRaceTimeFromMs(totalMs: number): string {
+  const safe = Math.max(0, Math.round(totalMs))
+  const hours = Math.floor(safe / 3600000)
+  const minutes = Math.floor((safe % 3600000) / 60000)
+  const seconds = Math.floor((safe % 60000) / 1000)
+  const millis = safe % 1000
+
+  if (hours > 0) {
+    return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(millis).padStart(3, "0")}`
+  }
+
+  const totalMinutes = Math.floor(safe / 60000)
+  return `${totalMinutes}:${String(seconds).padStart(2, "0")}.${String(millis).padStart(3, "0")}`
+}
+
+function formatGapFromLeaderMs(totalMs: number): string {
+  const safe = Math.max(0, Math.round(totalMs))
+  const minutes = Math.floor(safe / 60000)
+  const seconds = Math.floor((safe % 60000) / 1000)
+  const millis = safe % 1000
+
+  return `+${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(millis).padStart(3, "0")}`
+}
+
+function formatDGLabel(seconds: number, kind: Exclude<DGKind, "-" | "DSQ">) {
+  const safe = Math.max(0, Math.round(seconds || 0))
+  const minutes = Math.floor(safe / 60)
+  const secs = safe % 60
+  return `+${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}.000 | ${kind}`
+}
+
+function isDoppiatoValue(value: string) {
+  const v = String(value || "").trim()
+  if (!v) return false
+  if (v.toUpperCase() === "DOPPIATO") return true
+  return /^\d+giro$/i.test(v)
+}
+
+function isNonComparableUnionValue(value: string) {
+  const v = String(value || "").trim().toUpperCase()
+  if (!v) return true
+  if (v === "BOX") return true
+  if (v === "DNF") return true
+  if (v === "DSQ") return true
+  if (v === "DOPPIATO") return true
+  if (/^\d+GIRO$/i.test(v)) return true
+  return false
 }
 
 function buildUnionMatchSummary({
@@ -371,17 +519,17 @@ function buildUnionMatchSummary({
   }
 
   if (gara !== "error") {
-  const allGaraValues = rows.map((r) => String(r.gara || "").trim())
-  const uniqueGara = new Set(allGaraValues)
+    const allGaraValues = rows.map((r) => String(r.gara || "").trim())
+    const uniqueGara = new Set(allGaraValues)
 
-  if (
-    uniqueGara.size === 1 &&
-    (uniqueGara.has("18") || uniqueGara.has("-") || uniqueGara.has(""))
-  ) {
-    gara = "warn"
-    notes.push("Numero gara non rilevato dagli screen (–). Inserisci manualmente.")
+    if (
+      uniqueGara.size === 1 &&
+      (uniqueGara.has("18") || uniqueGara.has("-") || uniqueGara.has(""))
+    ) {
+      gara = "warn"
+      notes.push("Numero gara non rilevato dagli screen (–). Inserisci manualmente.")
+    }
   }
-}
 
   if (unionMeta.lobby && normalizeSimpleValue(rows[0]?.lobby) !== normalizeSimpleValue(unionMeta.lobby)) {
     lobby = "error"
@@ -618,7 +766,6 @@ function Pill({
     </span>
   )
 }
-
 function PosBadge({ pos }: { pos: number }) {
   const base: React.CSSProperties = {
     display: "inline-flex",
@@ -729,6 +876,113 @@ function renderDistaccoCell(value: string, exporting = false) {
   if (/^\d+giro$/i.test(t)) return <Pill left="DOPPIATO" variant="orange" exporting={exporting} />
 
   return t
+}
+
+function renderDGCell(
+  kind: DGKind | undefined,
+  seconds: number | undefined,
+  exporting = false
+) {
+  if (!kind || kind === "-") return "-"
+
+  if (kind === "DSQ") {
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          padding: exporting ? "4px 8px" : "3px 7px",
+          borderRadius: 999,
+          background: "rgba(255,0,128,0.18)",
+          border: "1px solid rgba(255,0,128,0.36)",
+          color: "#ffd6ef",
+          fontWeight: 900,
+          fontSize: exporting ? 12 : 11,
+          whiteSpace: "nowrap",
+          lineHeight: 1,
+          height: exporting ? 22 : 20,
+        }}
+      >
+        DSQ
+      </span>
+    )
+  }
+
+  const timeColor = kind === "P" ? "#ff3b3b" : "#ff2bd6"
+  const pillBg = kind === "P" ? "rgba(255,59,59,0.92)" : "rgba(255,43,214,0.92)"
+  const pillBorder = kind === "P" ? "1px solid rgba(255,59,59,0.55)" : "1px solid rgba(255,43,214,0.55)"
+  const pillShadow = kind === "P" ? "0 0 14px rgba(255,59,59,0.18)" : "0 0 14px rgba(255,43,214,0.18)"
+
+  const safe = Math.max(0, Math.round(seconds || 0))
+  const minutes = Math.floor(safe / 60)
+  const secs = safe % 60
+  const formatted = `+${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}.000`
+
+  return (
+  <span
+    style={{
+      display: "inline-flex",
+      alignItems: "baseline",
+      justifyContent: "center",
+      gap: exporting ? 8 : 7,
+      whiteSpace: "nowrap",
+      lineHeight: 1,
+    }}
+  >
+      <span
+        style={{
+          color: timeColor,
+          fontWeight: 900,
+          fontSize: exporting ? 17 : 16,
+          fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+          letterSpacing: 0.1,
+          textShadow:
+            kind === "P"
+              ? "0 0 10px rgba(255,59,59,0.20)"
+              : "0 0 10px rgba(255,43,214,0.18)",
+        }}
+      >
+        {formatted}
+      </span>
+
+      <span
+  style={{
+    color: "rgba(255,255,255,0.92)",
+    fontWeight: 800,
+    fontSize: exporting ? 13 : 12,
+    lineHeight: 1,
+    display: "inline-block",
+    transform: "translateY(-1px)",
+  }}
+>
+  |
+</span>
+
+      <span
+  style={{
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    minWidth: exporting ? 24 : 20,
+    height: exporting ? 20 : 18,
+    padding: exporting ? "0 8px" : "0 7px",
+    borderRadius: 999,
+    background: pillBg,
+    border: pillBorder,
+    boxShadow: pillShadow,
+    color: "rgba(0,0,0,0.92)",
+    fontWeight: 900,
+    fontSize: exporting ? 12 : 11,
+    lineHeight: 1,
+    textTransform: "uppercase",
+    transform: "translateY(-1px)",
+  }}
+>
+        {kind}
+      </span>
+    </span>
+  )
 }
 
 function LegendBare() {
@@ -931,7 +1185,7 @@ function ResultsTable({
   exporting = false,
   tableTitle = "Classifica Union (output)",
 }: {
-  previewRows: UnionRow[]
+  previewRows: DGRowComputed[]
   exporting?: boolean
   tableTitle?: string
 }) {
@@ -941,8 +1195,7 @@ function ResultsTable({
         borderRadius: 16,
         border: "1px solid rgba(255,255,255,0.10)",
         background: "rgba(0,0,0,0.22)",
-        overflowX: "auto",
-        overflowY: "hidden",
+        overflow: "hidden",
       }}
     >
       <div
@@ -965,7 +1218,6 @@ function ResultsTable({
         <table
           style={{
             width: "100%",
-            minWidth: exporting ? 1600 : 1240,
             borderCollapse: "collapse",
             tableLayout: "fixed",
           }}
@@ -980,31 +1232,34 @@ function ResultsTable({
             }}
           >
             <tr>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: 70 }}>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: 60 }}>
                 #
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 240 : 200 }}>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 220 : 190 }}>
                 Nome pilota
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 340 : 300 }}>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 300 : 270 }}>
                 Auto
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "right", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 180 : 150 }}>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "right", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 170 : 145 }}>
                 Distacchi
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 110 : 90 }}>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 90 : 76 }}>
                 PP
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 110 : 90 }}>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 90 : 76 }}>
                 GV
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 110 : 90 }}>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 170 : 150 }}>
+                DG
+              </th>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 90 : 74 }}>
                 Gara
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 110 : 90 }}>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 90 : 74 }}>
                 Lobby
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 170 : 140 }}>
+              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 150 : 125 }}>
                 Lega
               </th>
             </tr>
@@ -1069,38 +1324,52 @@ function ResultsTable({
                   </TableCell>
 
                   <TableCell
-  exporting={exporting}
-  align="center"
-  mono
-  dim={!r.gara}
-  style={{
-    borderBottom: "1px solid rgba(255,255,255,0.08)",
-  }}
->
-  {String(r.gara).trim() === "-" ? (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        minWidth: exporting ? 34 : 28,
-        height: exporting ? 28 : 24,
-        padding: exporting ? "0 10px" : "0 8px",
-        borderRadius: 999,
-        background: "rgba(255,165,0,0.16)",
-        border: "1px solid rgba(255,165,0,0.32)",
-        boxShadow: "0 0 10px rgba(255,165,0,0.12)",
-        color: "#fff3e0",
-        fontWeight: 900,
-        lineHeight: 1,
-      }}
-    >
-      -
-    </span>
-  ) : (
-    r.gara || "-"
-  )}
-</TableCell>
+                    exporting={exporting}
+                    align="center"
+                    mono
+                    dim={!r.dgKind || r.dgKind === "-"}
+                    style={{
+                      whiteSpace: "nowrap",
+                      fontSize: exporting ? 12 : 11,
+                      lineHeight: 1,
+                    }}
+                  >
+                    {renderDGCell(r.dgKind, r.dgSeconds, exporting)}
+                  </TableCell>
+
+                  <TableCell
+                    exporting={exporting}
+                    align="center"
+                    mono
+                    dim={!r.gara}
+                    style={{
+                      borderBottom: "1px solid rgba(255,255,255,0.08)",
+                    }}
+                  >
+                    {String(r.gara).trim() === "-" ? (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          minWidth: exporting ? 34 : 28,
+                          height: exporting ? 28 : 24,
+                          padding: exporting ? "0 10px" : "0 8px",
+                          borderRadius: 999,
+                          background: "rgba(255,165,0,0.16)",
+                          border: "1px solid rgba(255,165,0,0.32)",
+                          boxShadow: "0 0 10px rgba(255,165,0,0.12)",
+                          color: "#fff3e0",
+                          fontWeight: 900,
+                          lineHeight: 1,
+                        }}
+                      >
+                        -
+                      </span>
+                    ) : (
+                      r.gara || "-"
+                    )}
+                  </TableCell>
 
                   <TableCell exporting={exporting} align="center" mono dim={!r.lobby}>
                     {r.lobby || "-"}
@@ -1216,7 +1485,6 @@ function SplashScreen() {
     </div>
   )
 }
-
 export default function Page() {
   const [files, setFiles] = useState<File[]>([])
   const [csv, setCsv] = useState("")
@@ -1249,6 +1517,10 @@ export default function Page() {
   const [showAutoModal, setShowAutoModal] = useState(false)
   const [manualAutoOverrides, setManualAutoOverrides] = useState<Record<number, string>>({})
   const [manualAutoDraft, setManualAutoDraft] = useState<Record<number, string>>({})
+
+  const [dgKinds, setDgKinds] = useState<Record<string, DGKind>>({})
+  const [dgSeconds, setDgSeconds] = useState<Record<string, string>>({})
+  const [dgLapOverrides, setDgLapOverrides] = useState<Record<string, string>>({})
 
   const fileInputRef = useRef<HTMLInputElement | null>(null)
   const exportRef = useRef<HTMLDivElement | null>(null)
@@ -1357,43 +1629,220 @@ export default function Page() {
     return row?.nomePilota || ""
   }, [rows])
 
-  const winnerPilot = useMemo(() => {
-    const row = rows.find((r) => r.posizione === 1) || rows[0]
-    return row?.nomePilota || ""
-  }, [rows])
-
   const detectedGaraDisplay = useMemo(() => {
-  const rawMetaGara = String(unionMeta.gara || "").trim()
-  const allRowsAre18 =
-    rows.length > 0 && rows.every((r) => String(r.gara || "").trim() === "18")
+    const rawMetaGara = String(unionMeta.gara || "").trim()
+    const allRowsAre18 =
+      rows.length > 0 && rows.every((r) => String(r.gara || "").trim() === "18")
 
-  if (rawMetaGara === "18" && allRowsAre18) {
-    return "-"
-  }
+    if (rawMetaGara === "18" && allRowsAre18) {
+      return "-"
+    }
 
-  return rawMetaGara || "-"
-}, [unionMeta.gara, rows])
+    return rawMetaGara || "-"
+  }, [unionMeta.gara, rows])
 
-const effectiveGara = useMemo(() => {
-  return String(manualGaraOverride || detectedGaraDisplay || "").trim()
-}, [manualGaraOverride, detectedGaraDisplay])
+  const effectiveGara = useMemo(() => {
+    return String(manualGaraOverride || detectedGaraDisplay || "").trim()
+  }, [manualGaraOverride, detectedGaraDisplay])
 
   const displayRows = useMemo(() => {
-  return rows.map((r) => ({
-    ...r,
-    auto: (manualAutoOverrides[r.posizione] ?? r.auto ?? "").trim(),
-    gara: effectiveGara,
-  }))
-}, [rows, manualAutoOverrides, effectiveGara])
+    return rows.map((r) => ({
+      ...r,
+      auto: (manualAutoOverrides[r.posizione] ?? r.auto ?? "").trim(),
+      gara: effectiveGara,
+    }))
+  }, [rows, manualAutoOverrides, effectiveGara])
 
-  const displayCsv = useMemo(() => {
-    if (!csv) return ""
+  const winnerPilot = useMemo(() => {
+    const row = displayRows.find((r) => r.posizione === 1) || displayRows[0]
+    return row?.nomePilota || ""
+  }, [displayRows])
 
-    const lines = String(csv).split("\n")
-    if (lines.length <= 1) return csv
+  const matchSummary = useMemo(() => {
+    return buildUnionMatchSummary({
+      rows: displayRows,
+      unionMeta: { ...unionMeta, gara: effectiveGara },
+      detectedPoleDriver,
+      detectedBestLapDriver,
+      detectedRaceOrder,
+    })
+  }, [displayRows, unionMeta, effectiveGara, detectedPoleDriver, detectedBestLapDriver, detectedRaceOrder])
 
-    const header = lines[0]
-    const body = displayRows.map((r) =>
+  const hasManualAutoOverrides = useMemo(() => {
+    return Object.keys(manualAutoOverrides).length > 0
+  }, [manualAutoOverrides])
+
+  const finalRows = useMemo<DGRowComputed[]>(() => {
+    if (displayRows.length === 0) return []
+
+    const ordered = [...displayRows].sort((a, b) => a.posizione - b.posizione)
+
+    const leaderRow = ordered.find((r) => r.posizione === 1) || ordered[0]
+    const leaderMs = parseLeaderRaceTimeMs(leaderRow?.distacchi || "")
+
+    const comparable: Array<{
+      originalIndex: number
+      row: UnionRow
+      totalMs: number
+      dgKind: DGKind
+      dgSeconds: number
+    }> = []
+
+    const nonComparable: Array<{
+      originalIndex: number
+      row: UnionRow
+      dgKind: DGKind
+      dgSeconds: number
+    }> = []
+
+    const dsqRows: Array<{
+      originalIndex: number
+      row: UnionRow
+      dgKind: DGKind
+    }> = []
+
+    const resolvedBaseMsByIndex = new Map<number, number>()
+
+    for (let i = 0; i < ordered.length; i++) {
+      const row = ordered[i]
+      const key = normalizePilotKey(row.nomePilota)
+      const dgKind = dgKinds[key] || "-"
+      const dgSec = Number(dgSeconds[key] || 0)
+      const rawDistacco = String(row.distacchi || "").trim()
+      const isDoppiato = isDoppiatoValue(rawDistacco)
+
+      if (dgKind === "DSQ") {
+        dsqRows.push({
+          originalIndex: i,
+          row,
+          dgKind,
+        })
+        continue
+      }
+
+      let baseMs: number | null = null
+
+      if (i === 0) {
+        baseMs = parseLeaderRaceTimeMs(rawDistacco)
+      } else if (isDoppiato) {
+        const manualGap = String(dgLapOverrides[key] || "").trim()
+        const manualGapMs = parseManualGapMs(manualGap)
+        const prevIndex = i - 1
+
+        if (
+          manualGapMs != null &&
+          prevIndex >= 0 &&
+          resolvedBaseMsByIndex.has(prevIndex)
+        ) {
+          const prevMs = resolvedBaseMsByIndex.get(prevIndex)!
+          baseMs = prevMs + manualGapMs
+        }
+      } else if (!isNonComparableUnionValue(rawDistacco) && leaderMs != null) {
+        const directAbsolute = parseLeaderRaceTimeMs(rawDistacco)
+        if (directAbsolute != null) {
+          baseMs = directAbsolute
+        } else {
+          const gapMs = parseGapToLeaderMs(rawDistacco)
+          if (gapMs != null) {
+            baseMs = leaderMs + gapMs
+          }
+        }
+      }
+
+      if (baseMs != null) {
+        resolvedBaseMsByIndex.set(i, baseMs)
+        comparable.push({
+          originalIndex: i,
+          row,
+          totalMs: baseMs + dgSec * 1000,
+          dgKind,
+          dgSeconds: dgSec,
+        })
+      } else {
+        nonComparable.push({
+          originalIndex: i,
+          row,
+          dgKind,
+          dgSeconds: dgSec,
+        })
+      }
+    }
+
+    comparable.sort((a, b) => {
+      if (a.totalMs !== b.totalMs) return a.totalMs - b.totalMs
+      return a.originalIndex - b.originalIndex
+    })
+
+    const newLeaderMs = comparable[0]?.totalMs ?? null
+
+    const comparableRows: DGRowComputed[] = comparable.map((item, idx) => {
+      const isLeader = idx === 0
+      const updatedDistacco =
+        newLeaderMs == null
+          ? item.row.distacchi
+          : isLeader
+            ? formatRaceTimeFromMs(item.totalMs)
+            : formatGapFromLeaderMs(item.totalMs - newLeaderMs)
+
+      return {
+        ...item.row,
+        posizione: idx + 1,
+        distacchi: updatedDistacco,
+        dgKind: item.dgKind,
+        dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
+        dgLabel:
+          item.dgKind === "P" || item.dgKind === "S"
+            ? formatDGLabel(item.dgSeconds, item.dgKind)
+            : item.dgKind === "DSQ"
+              ? "DSQ"
+              : "",
+        computedRaceMs: item.totalMs,
+        computedNonComparable: false,
+        computedDsq: false,
+      }
+    })
+
+    const nonComparableRows: DGRowComputed[] = nonComparable
+      .sort((a, b) => a.originalIndex - b.originalIndex)
+      .map((item, idx) => ({
+        ...item.row,
+        posizione: comparableRows.length + idx + 1,
+        dgKind: item.dgKind,
+        dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
+        dgLabel:
+          item.dgKind === "P" || item.dgKind === "S"
+            ? formatDGLabel(item.dgSeconds, item.dgKind)
+            : item.dgKind === "DSQ"
+              ? "DSQ"
+              : "",
+        computedRaceMs: null,
+        computedNonComparable: true,
+        computedDsq: false,
+      }))
+
+    const dsqComputedRows: DGRowComputed[] = dsqRows
+      .sort((a, b) => a.originalIndex - b.originalIndex)
+      .map((item, idx) => ({
+        ...item.row,
+        posizione: comparableRows.length + nonComparableRows.length + idx + 1,
+        distacchi: "DSQ",
+        dgKind: "DSQ",
+        dgSeconds: 0,
+        dgLabel: "DSQ",
+        computedRaceMs: null,
+        computedNonComparable: false,
+        computedDsq: true,
+      }))
+
+    return [...comparableRows, ...nonComparableRows, ...dsqComputedRows]
+  }, [displayRows, dgKinds, dgSeconds, dgLapOverrides])
+
+  const finalCsv = useMemo(() => {
+    if (!finalRows.length) return ""
+
+    const header = "#,Nome pilota,Auto,Distacchi,-PP-,-GV-,Gara,Lobby,Lega"
+
+    const body = finalRows.map((r) =>
       [
         r.posizione,
         r.nomePilota,
@@ -1413,21 +1862,7 @@ const effectiveGara = useMemo(() => {
     )
 
     return [header, ...body].join("\n")
-  }, [csv, displayRows])
-
-  const matchSummary = useMemo(() => {
-    return buildUnionMatchSummary({
-      rows: displayRows,
-      unionMeta: { ...unionMeta, gara: effectiveGara },
-      detectedPoleDriver,
-      detectedBestLapDriver,
-      detectedRaceOrder,
-    })
-  }, [displayRows, unionMeta, effectiveGara, detectedPoleDriver, detectedBestLapDriver, detectedRaceOrder])
-
-  const hasManualAutoOverrides = useMemo(() => {
-    return Object.keys(manualAutoOverrides).length > 0
-  }, [manualAutoOverrides])
+  }, [finalRows])
 
   function openAutoCorrectionModal() {
     const nextDraft: Record<number, string> = {}
@@ -1484,6 +1919,9 @@ const effectiveGara = useMemo(() => {
     setManualAutoOverrides({})
     setManualAutoDraft({})
     setShowAutoModal(false)
+    setDgKinds({})
+    setDgSeconds({})
+    setDgLapOverrides({})
     setLoading(false)
     setExporting(false)
     setError("")
@@ -1504,7 +1942,7 @@ const effectiveGara = useMemo(() => {
   }
 
   async function performExportTablePng() {
-    if (!exportRef.current || displayRows.length === 0) return
+    if (!exportRef.current || finalRows.length === 0) return
 
     try {
       setExporting(true)
@@ -1567,6 +2005,9 @@ const effectiveGara = useMemo(() => {
     setManualAutoOverrides({})
     setManualAutoDraft({})
     setShowAutoModal(false)
+    setDgKinds({})
+    setDgSeconds({})
+    setDgLapOverrides({})
 
     try {
       const fd = new FormData()
@@ -1804,8 +2245,7 @@ const effectiveGara = useMemo(() => {
       </div>
     )
   }
-
-  return (
+    return (
     <div
       key={workspaceKey}
       style={{
@@ -2084,7 +2524,7 @@ const effectiveGara = useMemo(() => {
               </div>
             )}
 
-            {displayRows.length > 0 && (
+            {finalRows.length > 0 && (
               <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
                 <button
                   onClick={openExportModal}
@@ -2178,76 +2618,76 @@ const effectiveGara = useMemo(() => {
             )}
 
             {displayRows.length > 0 && (
-  <div
-    style={{
-      borderRadius: 14,
-      border:
-        matchSummary.fields.auto === "warn"
-          ? "1px solid rgba(255,215,0,0.28)"
-          : "1px solid rgba(255,255,255,0.10)",
-      background:
-        matchSummary.fields.auto === "warn"
-          ? "rgba(255,215,0,0.08)"
-          : "rgba(255,255,255,0.05)",
-      padding: 12,
-      display: "flex",
-      gap: 12,
-      flexWrap: "wrap",
-      alignItems: "center",
-    }}
-  >
-    <div style={{ fontSize: 13, fontWeight: 800 }}>
-      {matchSummary.fields.auto === "warn"
-        ? "Auto sospette rilevate. Puoi correggerle manualmente."
-        : hasManualAutoOverrides
-          ? "Correzioni auto manuali attive."
-          : "Correzione auto manuale opzionale."}
-    </div>
+              <div
+                style={{
+                  borderRadius: 14,
+                  border:
+                    matchSummary.fields.auto === "warn"
+                      ? "1px solid rgba(255,215,0,0.28)"
+                      : "1px solid rgba(255,255,255,0.10)",
+                  background:
+                    matchSummary.fields.auto === "warn"
+                      ? "rgba(255,215,0,0.08)"
+                      : "rgba(255,255,255,0.05)",
+                  padding: 12,
+                  display: "flex",
+                  gap: 12,
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                }}
+              >
+                <div style={{ fontSize: 13, fontWeight: 800 }}>
+                  {matchSummary.fields.auto === "warn"
+                    ? "Auto sospette rilevate. Puoi correggerle manualmente."
+                    : hasManualAutoOverrides
+                      ? "Correzioni auto manuali attive."
+                      : "Correzione auto manuale opzionale."}
+                </div>
 
-    <button
-      onClick={openAutoCorrectionModal}
-      style={{
-        padding: "10px 12px",
-        borderRadius: 10,
-        border: "1px solid rgba(255,255,255,0.16)",
-        background:
-          matchSummary.fields.auto === "warn"
-            ? "rgba(160,90,255,0.18)"
-            : "rgba(255,255,255,0.08)",
-        color: "white",
-        cursor: "pointer",
-        fontWeight: 800,
-        textTransform: "uppercase",
-        fontSize: 12,
-        boxShadow:
-          matchSummary.fields.auto === "warn"
-            ? "0 0 20px rgba(160,90,255,0.10)"
-            : "none",
-      }}
-    >
-      Modifica Auto
-    </button>
+                <button
+                  onClick={openAutoCorrectionModal}
+                  style={{
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    border: "1px solid rgba(255,255,255,0.16)",
+                    background:
+                      matchSummary.fields.auto === "warn"
+                        ? "rgba(160,90,255,0.18)"
+                        : "rgba(255,255,255,0.08)",
+                    color: "white",
+                    cursor: "pointer",
+                    fontWeight: 800,
+                    textTransform: "uppercase",
+                    fontSize: 12,
+                    boxShadow:
+                      matchSummary.fields.auto === "warn"
+                        ? "0 0 20px rgba(160,90,255,0.10)"
+                        : "none",
+                  }}
+                >
+                  Modifica Auto
+                </button>
 
-    {hasManualAutoOverrides && (
-      <button
-        onClick={resetAutoCorrections}
-        style={{
-          padding: "10px 12px",
-          borderRadius: 10,
-          border: "1px solid rgba(255,255,255,0.14)",
-          background: "rgba(255,255,255,0.06)",
-          color: "white",
-          cursor: "pointer",
-          fontWeight: 800,
-          textTransform: "uppercase",
-          fontSize: 12,
-        }}
-      >
-        Reset auto manuali
-      </button>
-    )}
-  </div>
-)}
+                {hasManualAutoOverrides && (
+                  <button
+                    onClick={resetAutoCorrections}
+                    style={{
+                      padding: "10px 12px",
+                      borderRadius: 10,
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      background: "rgba(255,255,255,0.06)",
+                      color: "white",
+                      cursor: "pointer",
+                      fontWeight: 800,
+                      textTransform: "uppercase",
+                      fontSize: 12,
+                    }}
+                  >
+                    Reset auto manuali
+                  </button>
+                )}
+              </div>
+            )}
 
             {displayRows.length > 0 && (
               <div
@@ -2363,6 +2803,306 @@ const effectiveGara = useMemo(() => {
               </div>
             )}
 
+            {/* TABELLONA RISULTATI SUBITO DOPO ESTRAZIONE */}
+{showTable && finalRows.length > 0 && (
+  <ResultsTable previewRows={finalRows} />
+)}
+
+{/* DIREZIONE GARA DOPO LA TABELLA */}
+{displayRows.length > 0 && (
+  <div
+    style={{
+      borderRadius: 16,
+      border: "1px solid rgba(255,255,255,0.10)",
+      background: "rgba(0,0,0,0.18)",
+      padding: 14,
+      display: "grid",
+      gap: 12,
+    }}
+  >
+    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+      <div style={{ fontWeight: 900, opacity: 0.96 }}>Direzione Gara</div>
+      <div style={{ fontSize: 12, opacity: 0.78 }}>
+        P e S modificano entrambi la classifica. DSQ manda il pilota in fondo.
+      </div>
+    </div>
+
+                <div
+                  style={{
+                    borderRadius: 12,
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    overflow: "hidden",
+                  }}
+                >
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      tableLayout: "fixed",
+                    }}
+                  >
+                    <thead
+                      style={{
+                        background: "rgba(10,12,18,0.95)",
+                      }}
+                    >
+                      <tr>
+                        <th style={{ padding: "12px 12px", textAlign: "left", fontSize: 12, opacity: 0.82, width: "44%" }}>
+                          Pilota
+                        </th>
+                        <th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.82, width: "18%" }}>
+                          Penalità
+                        </th>
+                        <th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.82, width: "18%" }}>
+                          Segnalazioni
+                        </th>
+                        <th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.82, width: "20%" }}>
+  Gap finale doppiato
+</th>
+<th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.82, width: "6%" }}>
+  X
+</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {displayRows.map((row, idx) => {
+                        const key = normalizePilotKey(row.nomePilota)
+                        const selectedKind = dgKinds[key] || "-"
+                        const selectedSeconds = dgSeconds[key] || "-"
+                        const isDoppiato = isDoppiatoValue(row.distacchi)
+                        const manualGap = dgLapOverrides[key] || ""
+                        const manualGapValid = manualGap.trim() === "" ? true : parseManualGapMs(manualGap) != null
+
+                        return (
+                          <tr
+                            key={`dg-${row.posizione}-${row.nomePilota}-${idx}`}
+                            style={{
+                              background: idx % 2 === 0 ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.10)",
+                            }}
+                          >
+                            <TableCell style={{ fontWeight: 700 }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                                <PosBadge pos={row.posizione} />
+                                <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                                  {row.nomePilota}
+                                </span>
+                              </div>
+                            </TableCell>
+
+                            <TableCell align="center">
+                              <div style={{ display: "inline-flex", gap: 8, alignItems: "center", justifyContent: "center" }}>
+                                <select
+                                  value={selectedKind === "P" || selectedKind === "DSQ" ? selectedKind : "-"}
+                                  onChange={(e) => {
+                                    const nextKind = e.target.value as DGKind
+                                    setDgKinds((prev) => {
+                                      const next = { ...prev }
+                                      if (nextKind === "-") {
+                                        if (next[key] === "P" || next[key] === "DSQ") delete next[key]
+                                      } else {
+                                        next[key] = nextKind
+                                      }
+                                      return next
+                                    })
+                                    if (nextKind === "DSQ") {
+                                      setDgSeconds((prev) => ({ ...prev, [key]: "-" }))
+                                    }
+                                  }}
+                                  style={{
+                                    width: 74,
+                                    padding: "8px 8px",
+                                    borderRadius: 10,
+                                    border: "1px solid rgba(255,255,255,0.14)",
+                                    background: "rgba(0,0,0,0.26)",
+                                    color: "white",
+                                  }}
+                                >
+                                  <option value="-" style={{ background: "#11151d", color: "white" }}>-</option>
+                                  <option value="P" style={{ background: "#11151d", color: "white" }}>P</option>
+                                  <option value="DSQ" style={{ background: "#11151d", color: "white" }}>DSQ</option>
+                                </select>
+
+                                <select
+                                  value={selectedKind === "P" ? selectedSeconds : "-"}
+                                  disabled={selectedKind !== "P"}
+                                  onChange={(e) =>
+                                    setDgSeconds((prev) => ({
+                                      ...prev,
+                                      [key]: e.target.value,
+                                    }))
+                                  }
+                                  style={{
+                                    width: 84,
+                                    padding: "8px 8px",
+                                    borderRadius: 10,
+                                    border: "1px solid rgba(255,255,255,0.14)",
+                                    background: selectedKind !== "P" ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.26)",
+                                    color: "white",
+                                    opacity: selectedKind !== "P" ? 0.65 : 1,
+                                  }}
+                                >
+                                  {DG_SECOND_OPTIONS.map((v) => (
+                                    <option key={v} value={v} style={{ background: "#11151d", color: "white" }}>
+                                      {v === "-" ? "-" : `${v}s`}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </TableCell>
+
+                            <TableCell align="center">
+                              <div style={{ display: "inline-flex", gap: 8, alignItems: "center", justifyContent: "center" }}>
+                                <select
+                                  value={selectedKind === "S" ? "S" : "-"}
+                                  onChange={(e) => {
+                                    const nextKind = e.target.value as DGKind
+                                    setDgKinds((prev) => {
+                                      const next = { ...prev }
+                                      if (nextKind === "-") {
+                                        if (next[key] === "S") delete next[key]
+                                      } else {
+                                        next[key] = nextKind
+                                      }
+                                      return next
+                                    })
+                                    if (nextKind === "-") {
+                                      setDgSeconds((prev) => {
+                                        if (selectedKind === "S") {
+                                          return { ...prev, [key]: "-" }
+                                        }
+                                        return prev
+                                      })
+                                    }
+                                  }}
+                                  style={{
+                                    width: 74,
+                                    padding: "8px 8px",
+                                    borderRadius: 10,
+                                    border: "1px solid rgba(255,255,255,0.14)",
+                                    background: "rgba(0,0,0,0.26)",
+                                    color: "white",
+                                  }}
+                                >
+                                  <option value="-" style={{ background: "#11151d", color: "white" }}>-</option>
+                                  <option value="S" style={{ background: "#11151d", color: "white" }}>S</option>
+                                </select>
+
+                                <select
+                                  value={selectedKind === "S" ? selectedSeconds : "-"}
+                                  disabled={selectedKind !== "S"}
+                                  onChange={(e) =>
+                                    setDgSeconds((prev) => ({
+                                      ...prev,
+                                      [key]: e.target.value,
+                                    }))
+                                  }
+                                  style={{
+                                    width: 84,
+                                    padding: "8px 8px",
+                                    borderRadius: 10,
+                                    border: "1px solid rgba(255,255,255,0.14)",
+                                    background: selectedKind !== "S" ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.26)",
+                                    color: "white",
+                                    opacity: selectedKind !== "S" ? 0.65 : 1,
+                                  }}
+                                >
+                                  {DG_SECOND_OPTIONS.map((v) => (
+                                    <option key={v} value={v} style={{ background: "#11151d", color: "white" }}>
+                                      {v === "-" ? "-" : `${v}s`}
+                                    </option>
+                                  ))}
+                                </select>
+                              </div>
+                            </TableCell>
+
+                            <TableCell align="center">
+  {isDoppiato ? (
+    <div style={{ display: "grid", gap: 6, justifyItems: "center" }}>
+      <input
+        value={manualGap}
+        onChange={(e) =>
+          setDgLapOverrides((prev) => ({
+            ...prev,
+            [key]: e.target.value,
+          }))
+        }
+        placeholder="1:14.960"
+        style={{
+          width: 120,
+          padding: "8px 10px",
+          borderRadius: 10,
+          border: "1px solid rgba(255,255,255,0.14)",
+          background: "rgba(0,0,0,0.26)",
+          color: "white",
+          textAlign: "center",
+          fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+        }}
+      />
+      <div
+        style={{
+          fontSize: 11,
+          opacity: manualGapValid ? 0.65 : 1,
+          color: manualGapValid ? "rgba(255,255,255,0.65)" : "#ff8a8a",
+        }}
+      >
+        {manualGap.trim()
+          ? manualGapValid
+            ? "Gap valido"
+            : "Usa m:ss.mmm"
+          : "Inserisci gap finale"}
+      </div>
+    </div>
+  ) : (
+    "-"
+  )}
+</TableCell>
+
+<TableCell align="center">
+  <button
+    onClick={() => {
+      setDgKinds((prev) => {
+        const next = { ...prev }
+        delete next[key]
+        return next
+      })
+      setDgSeconds((prev) => {
+        const next = { ...prev }
+        delete next[key]
+        return next
+      })
+      setDgLapOverrides((prev) => {
+        const next = { ...prev }
+        delete next[key]
+        return next
+      })
+    }}
+    style={{
+      width: 34,
+      height: 34,
+      borderRadius: 10,
+      border: "1px solid rgba(255,255,255,0.14)",
+      background: "rgba(255,255,255,0.06)",
+      color: "white",
+      cursor: "pointer",
+      fontWeight: 900,
+      fontSize: 16,
+      lineHeight: 1,
+    }}
+    title="Reset DG"
+  >
+    ×
+  </button>
+</TableCell>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
             {error && (
               <pre
                 style={{
@@ -2379,9 +3119,9 @@ const effectiveGara = useMemo(() => {
               </pre>
             )}
 
-            {showTable && displayRows.length > 0 && <ResultsTable previewRows={displayRows} />}
+            {showTable && finalRows.length > 0 && <ResultsTable previewRows={finalRows} />}
 
-            {displayCsv && (
+            {finalCsv && (
               <div
                 style={{
                   borderRadius: 16,
@@ -2395,7 +3135,7 @@ const effectiveGara = useMemo(() => {
                 <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
                   <div style={{ fontWeight: 900 }}>CSV Union Output</div>
                   <a
-                    href={"data:text/csv;charset=utf-8," + encodeURIComponent(displayCsv)}
+                    href={"data:text/csv;charset=utf-8," + encodeURIComponent(finalCsv)}
                     download={`${formatLobbyShort(unionMeta.lobby).replace(/[^\w-]/g, "_")}.csv`}
                     style={{
                       color: "white",
@@ -2412,7 +3152,7 @@ const effectiveGara = useMemo(() => {
                 </div>
 
                 <textarea
-                  value={displayCsv}
+                  value={finalCsv}
                   readOnly
                   rows={14}
                   style={{
@@ -2786,7 +3526,7 @@ const effectiveGara = useMemo(() => {
         }}
       >
         <div ref={exportRef}>
-          {displayRows.length > 0 && (
+          {finalRows.length > 0 && (
             <div
               style={{
                 width: 1920,
@@ -2821,7 +3561,7 @@ const effectiveGara = useMemo(() => {
               />
 
               <ResultsTable
-                previewRows={displayRows}
+                previewRows={finalRows}
                 exporting={true}
                 tableTitle="Classifica Union"
               />
