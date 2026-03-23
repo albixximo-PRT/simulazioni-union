@@ -343,19 +343,6 @@ function formatGapFromLeaderMs(totalMs: number): string {
   return `+${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${String(millis).padStart(3, "0")}`
 }
 
-function isDnfValue(value: string) {
-  return String(value || "").trim().toUpperCase() === "DNF"
-}
-
-function isBoxValue(value: string) {
-  return String(value || "").trim().toUpperCase() === "BOX"
-}
-
-function formatAbsoluteOrGapFromLeader(totalMs: number, leaderMs: number, isLeader: boolean) {
-  if (isLeader) return formatRaceTimeFromMs(totalMs)
-  return formatGapFromLeaderMs(totalMs - leaderMs)
-}
-
 function formatDGLabel(seconds: number, kind: Exclude<DGKind, "-" | "DSQ">) {
   const safe = Math.max(0, Math.round(seconds || 0))
   const minutes = Math.floor(safe / 60)
@@ -1686,348 +1673,211 @@ export default function Page() {
   }, [manualAutoOverrides])
 
   const finalRows = useMemo<DGRowComputed[]>(() => {
-  if (displayRows.length === 0) return []
+    if (displayRows.length === 0) return []
 
-  const ordered = [...displayRows].sort((a, b) => a.posizione - b.posizione)
+    const ordered = [...displayRows].sort((a, b) => a.posizione - b.posizione)
 
-  const leaderRow = ordered.find((r) => r.posizione === 1) || ordered[0]
-  const leaderMs = parseLeaderRaceTimeMs(leaderRow?.distacchi || "")
+    const leaderRow = ordered.find((r) => r.posizione === 1) || ordered[0]
+    const leaderMs = parseLeaderRaceTimeMs(leaderRow?.distacchi || "")
 
-  const comparable: Array<{
-    originalIndex: number
-    row: UnionRow
-    totalMs: number
-    dgKind: DGKind
-    dgSeconds: number
-  }> = []
+    const comparable: Array<{
+      originalIndex: number
+      row: UnionRow
+      totalMs: number
+      dgKind: DGKind
+      dgSeconds: number
+    }> = []
 
-  const doppiatiManuali: Array<{
-    originalIndex: number
-    row: UnionRow
-    totalMs: number
-    dgKind: DGKind
-    dgSeconds: number
-  }> = []
+    const nonComparable: Array<{
+      originalIndex: number
+      row: UnionRow
+      dgKind: DGKind
+      dgSeconds: number
+    }> = []
 
-  const doppiatiAuto: Array<{
-    originalIndex: number
-    row: UnionRow
-    dgKind: DGKind
-    dgSeconds: number
-  }> = []
+    const dsqRows: Array<{
+      originalIndex: number
+      row: UnionRow
+      dgKind: DGKind
+    }> = []
 
-  const dnfRows: Array<{
-    originalIndex: number
-    row: UnionRow
-    dgKind: DGKind
-    dgSeconds: number
-  }> = []
+    const resolvedBaseMsByIndex = new Map<number, number>()
 
-  const boxRows: Array<{
-    originalIndex: number
-    row: UnionRow
-    dgKind: DGKind
-    dgSeconds: number
-  }> = []
+    for (let i = 0; i < ordered.length; i++) {
+      const row = ordered[i]
+      const key = normalizePilotKey(row.nomePilota)
+      const dgKind = dgKinds[key] || "-"
+      const dgSec = Number(dgSeconds[key] || 0)
+      const rawDistacco = String(row.distacchi || "").trim()
+      const isDoppiato = isDoppiatoValue(rawDistacco)
 
-  const otherNonComparable: Array<{
-    originalIndex: number
-    row: UnionRow
-    dgKind: DGKind
-    dgSeconds: number
-  }> = []
+      if (dgKind === "DSQ") {
+        dsqRows.push({
+          originalIndex: i,
+          row,
+          dgKind,
+        })
+        continue
+      }
 
-  const dsqRows: Array<{
-    originalIndex: number
-    row: UnionRow
-    dgKind: DGKind
-  }> = []
+      let baseMs: number | null = null
 
-  for (let i = 0; i < ordered.length; i++) {
-    const row = ordered[i]
-    const key = normalizePilotKey(row.nomePilota)
-    const dgKind = dgKinds[key] || "-"
-    const dgSec = Number(dgSeconds[key] || 0)
-    const rawDistacco = String(row.distacchi || "").trim()
+      if (i === 0) {
+        baseMs = parseLeaderRaceTimeMs(rawDistacco)
+      } else if (isDoppiato) {
+        const manualGap = String(dgLapOverrides[key] || "").trim()
+        const manualGapMs = parseManualGapMs(manualGap)
+        const prevIndex = i - 1
 
-    if (dgKind === "DSQ") {
-      dsqRows.push({
-        originalIndex: i,
-        row,
-        dgKind,
-      })
-      continue
-    }
+        if (
+          manualGapMs != null &&
+          prevIndex >= 0 &&
+          resolvedBaseMsByIndex.has(prevIndex)
+        ) {
+          const prevMs = resolvedBaseMsByIndex.get(prevIndex)!
+          baseMs = prevMs + manualGapMs
+        }
+      } else if (!isNonComparableUnionValue(rawDistacco) && leaderMs != null) {
+        const directAbsolute = parseLeaderRaceTimeMs(rawDistacco)
+        if (directAbsolute != null) {
+          baseMs = directAbsolute
+        } else {
+          const gapMs = parseGapToLeaderMs(rawDistacco)
+          if (gapMs != null) {
+            baseMs = leaderMs + gapMs
+          }
+        }
+      }
 
-    const penaltyMs = dgSec * 1000
-
-    if (i === 0) {
-      const baseMs = parseLeaderRaceTimeMs(rawDistacco)
       if (baseMs != null) {
+        resolvedBaseMsByIndex.set(i, baseMs)
         comparable.push({
           originalIndex: i,
           row,
-          totalMs: baseMs + penaltyMs,
+          totalMs: baseMs + dgSec * 1000,
           dgKind,
           dgSeconds: dgSec,
         })
       } else {
-        otherNonComparable.push({
+        nonComparable.push({
           originalIndex: i,
           row,
           dgKind,
           dgSeconds: dgSec,
         })
       }
-      continue
     }
 
-    if (isDoppiatoValue(rawDistacco)) {
-      const manualGap = String(dgLapOverrides[key] || "").trim()
-      const manualGapMs = parseManualGapMs(manualGap)
-
-      if (manualGapMs != null && leaderMs != null) {
-        doppiatiManuali.push({
-          originalIndex: i,
-          row,
-          totalMs: leaderMs + manualGapMs + penaltyMs,
-          dgKind,
-          dgSeconds: dgSec,
-        })
-      } else {
-        doppiatiAuto.push({
-          originalIndex: i,
-          row,
-          dgKind,
-          dgSeconds: dgSec,
-        })
-      }
-      continue
-    }
-
-    if (isDnfValue(rawDistacco)) {
-      dnfRows.push({
-        originalIndex: i,
-        row,
-        dgKind,
-        dgSeconds: dgSec,
-      })
-      continue
-    }
-
-    if (isBoxValue(rawDistacco)) {
-      boxRows.push({
-        originalIndex: i,
-        row,
-        dgKind,
-        dgSeconds: dgSec,
-      })
-      continue
-    }
-
-    if (!isNonComparableUnionValue(rawDistacco) && leaderMs != null) {
-      const directAbsolute = parseLeaderRaceTimeMs(rawDistacco)
-      if (directAbsolute != null) {
-        comparable.push({
-          originalIndex: i,
-          row,
-          totalMs: directAbsolute + penaltyMs,
-          dgKind,
-          dgSeconds: dgSec,
-        })
-        continue
-      }
-
-      const gapMs = parseGapToLeaderMs(rawDistacco)
-      if (gapMs != null) {
-        comparable.push({
-          originalIndex: i,
-          row,
-          totalMs: leaderMs + gapMs + penaltyMs,
-          dgKind,
-          dgSeconds: dgSec,
-        })
-        continue
-      }
-    }
-
-    otherNonComparable.push({
-      originalIndex: i,
-      row,
-      dgKind,
-      dgSeconds: dgSec,
+    comparable.sort((a, b) => {
+      if (a.totalMs !== b.totalMs) return a.totalMs - b.totalMs
+      return a.originalIndex - b.originalIndex
     })
-  }
 
-  comparable.sort((a, b) => {
-    if (a.totalMs !== b.totalMs) return a.totalMs - b.totalMs
-    return a.originalIndex - b.originalIndex
-  })
+    const newLeaderMs = comparable[0]?.totalMs ?? null
 
-  doppiatiManuali.sort((a, b) => {
-    if (a.totalMs !== b.totalMs) return a.totalMs - b.totalMs
-    return a.originalIndex - b.originalIndex
-  })
-
-  const allComparableForLeader = [...comparable, ...doppiatiManuali].sort((a, b) => {
-    if (a.totalMs !== b.totalMs) return a.totalMs - b.totalMs
-    return a.originalIndex - b.originalIndex
-  })
-
-  const newLeaderMs = allComparableForLeader[0]?.totalMs ?? null
-
-  const comparableRows: DGRowComputed[] = allComparableForLeader.map((item, idx) => {
-    const isLeader = idx === 0
-    const updatedDistacco =
-      newLeaderMs == null
-        ? item.row.distacchi
-        : formatAbsoluteOrGapFromLeader(item.totalMs, newLeaderMs, isLeader)
-
-    return {
-      ...item.row,
-      posizione: idx + 1,
-      distacchi: updatedDistacco,
-      dgKind: item.dgKind,
-      dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
-      dgLabel:
-        item.dgKind === "P" || item.dgKind === "S"
-          ? formatDGLabel(item.dgSeconds, item.dgKind)
-          : item.dgKind === "DSQ"
-            ? "DSQ"
-            : "",
-      computedRaceMs: item.totalMs,
-      computedNonComparable: false,
-      computedDsq: false,
-    }
-  })
-
-  let nextPosition = comparableRows.length + 1
-
-  let anchorMs =
-    comparableRows.length > 0
-      ? comparableRows[comparableRows.length - 1].computedRaceMs ?? newLeaderMs ?? 0
-      : newLeaderMs ?? 0
-
-  const doppiatiAutoRows: DGRowComputed[] = doppiatiAuto
-    .sort((a, b) => a.originalIndex - b.originalIndex)
-    .map((item, idx) => {
-      const autoBaseMs = anchorMs + (idx + 1) * 10000 + item.dgSeconds * 1000
+    const comparableRows: DGRowComputed[] = comparable.map((item, idx) => {
+      const isLeader = idx === 0
       const updatedDistacco =
         newLeaderMs == null
-          ? formatRaceTimeFromMs(autoBaseMs)
-          : formatGapFromLeaderMs(autoBaseMs - newLeaderMs)
+          ? item.row.distacchi
+          : isLeader
+            ? formatRaceTimeFromMs(item.totalMs)
+            : formatGapFromLeaderMs(item.totalMs - newLeaderMs)
 
       return {
         ...item.row,
-        posizione: nextPosition++,
+        posizione: idx + 1,
         distacchi: updatedDistacco,
         dgKind: item.dgKind,
         dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
         dgLabel:
           item.dgKind === "P" || item.dgKind === "S"
             ? formatDGLabel(item.dgSeconds, item.dgKind)
-            : "",
-        computedRaceMs: autoBaseMs,
+            : item.dgKind === "DSQ"
+              ? "DSQ"
+              : "",
+        computedRaceMs: item.totalMs,
         computedNonComparable: false,
         computedDsq: false,
       }
     })
 
-  if (doppiatiAutoRows.length > 0) {
-    anchorMs = doppiatiAutoRows[doppiatiAutoRows.length - 1].computedRaceMs ?? anchorMs
-  }
-
-  const dnfRowsComputed: DGRowComputed[] = dnfRows
-    .sort((a, b) => a.originalIndex - b.originalIndex)
-    .map((item, idx) => {
-      const totalMs = 60 * 60 * 1000 + idx * 60 * 1000 + item.dgSeconds * 1000
-      return {
+    const nonComparableRows: DGRowComputed[] = nonComparable
+      .sort((a, b) => a.originalIndex - b.originalIndex)
+      .map((item, idx) => ({
         ...item.row,
-        posizione: nextPosition++,
-        distacchi: formatRaceTimeFromMs(totalMs),
+        posizione: comparableRows.length + idx + 1,
         dgKind: item.dgKind,
         dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
         dgLabel:
           item.dgKind === "P" || item.dgKind === "S"
             ? formatDGLabel(item.dgSeconds, item.dgKind)
-            : "",
-        computedRaceMs: totalMs,
-        computedNonComparable: false,
+            : item.dgKind === "DSQ"
+              ? "DSQ"
+              : "",
+        computedRaceMs: null,
+        computedNonComparable: true,
         computedDsq: false,
-      }
-    })
+      }))
 
-  const boxRowsComputed: DGRowComputed[] = boxRows
-    .sort((a, b) => a.originalIndex - b.originalIndex)
-    .map((item, idx) => {
-      const totalMs = 2 * 60 * 60 * 1000 + idx * 60 * 1000 + item.dgSeconds * 1000
-      return {
+    const dsqComputedRows: DGRowComputed[] = dsqRows
+      .sort((a, b) => a.originalIndex - b.originalIndex)
+      .map((item, idx) => ({
         ...item.row,
-        posizione: nextPosition++,
-        distacchi: formatRaceTimeFromMs(totalMs),
-        dgKind: item.dgKind,
-        dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
-        dgLabel:
-          item.dgKind === "P" || item.dgKind === "S"
-            ? formatDGLabel(item.dgSeconds, item.dgKind)
-            : "",
-        computedRaceMs: totalMs,
+        posizione: comparableRows.length + nonComparableRows.length + idx + 1,
+        distacchi: "DSQ",
+        dgKind: "DSQ",
+        dgSeconds: 0,
+        dgLabel: "DSQ",
+        computedRaceMs: null,
         computedNonComparable: false,
-        computedDsq: false,
-      }
-    })
+        computedDsq: true,
+      }))
 
-  const otherRows: DGRowComputed[] = otherNonComparable
-    .sort((a, b) => a.originalIndex - b.originalIndex)
-    .map((item) => ({
-      ...item.row,
-      posizione: nextPosition++,
-      dgKind: item.dgKind,
-      dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
-      dgLabel:
-        item.dgKind === "P" || item.dgKind === "S"
-          ? formatDGLabel(item.dgSeconds, item.dgKind)
-          : "",
-      computedRaceMs: null,
-      computedNonComparable: true,
-      computedDsq: false,
-    }))
-
-  const dsqComputedRows: DGRowComputed[] = dsqRows
-    .sort((a, b) => a.originalIndex - b.originalIndex)
-    .map((item) => ({
-      ...item.row,
-      posizione: nextPosition++,
-      distacchi: "DSQ",
-      dgKind: "DSQ",
-      dgSeconds: 0,
-      dgLabel: "DSQ",
-      computedRaceMs: null,
-      computedNonComparable: false,
-      computedDsq: true,
-    }))
-
-  return [
-    ...comparableRows,
-    ...doppiatiAutoRows,
-    ...dnfRowsComputed,
-    ...boxRowsComputed,
-    ...otherRows,
-    ...dsqComputedRows,
-  ]
-}, [displayRows, dgKinds, dgSeconds, dgLapOverrides])
+    return [...comparableRows, ...nonComparableRows, ...dsqComputedRows]
+  }, [displayRows, dgKinds, dgSeconds, dgLapOverrides])
 
   const finalCsv = useMemo(() => {
   if (!finalRows.length) return ""
 
   const header = "#,Nome pilota,Auto,Distacchi,-PP-,-GV-,Gara,Lobby,Lega"
 
-  const body = finalRows.map((r) =>
-    [
+  let dnfCount = 0
+  let boxCount = 0
+  let previousGapMs = 0
+
+  const body = finalRows.map((r, index) => {
+    const rawDistacco = String(r.distacchi || "").trim().toUpperCase()
+    let csvDistacco = String(r.distacchi || "").trim()
+
+    if (index === 0) {
+      previousGapMs = 0
+    } else if (rawDistacco.startsWith("+")) {
+      const parsedGap = parseGapToLeaderMs(rawDistacco)
+      if (parsedGap != null) {
+        previousGapMs = parsedGap
+      }
+      csvDistacco = String(r.distacchi || "").trim()
+    } else if (isDoppiatoValue(rawDistacco)) {
+      previousGapMs += 10000
+      csvDistacco = formatGapFromLeaderMs(previousGapMs)
+    } else if (rawDistacco === "DNF") {
+      csvDistacco = formatRaceTimeFromMs(3600000 + dnfCount * 60000)
+      dnfCount++
+    } else if (rawDistacco === "BOX") {
+      csvDistacco = formatRaceTimeFromMs(7200000 + boxCount * 60000)
+      boxCount++
+    } else if (rawDistacco === "DSQ") {
+      csvDistacco = "DSQ"
+    } else {
+      csvDistacco = String(r.distacchi || "").trim()
+    }
+
+    return [
       r.posizione,
       r.nomePilota,
       r.auto,
-      r.distacchi,
+      csvDistacco,
       r.pp,
       r.gv,
       r.gara,
@@ -2039,7 +1889,7 @@ export default function Page() {
         return s.includes(",") ? `"${s}"` : s
       })
       .join(",")
-  )
+  })
 
   return [header, ...body].join("\n")
 }, [finalRows])
