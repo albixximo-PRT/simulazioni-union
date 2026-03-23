@@ -580,6 +580,34 @@ function buildUnionMatchSummary({
   }
 }
 
+/* ===================== PUNTI UNION ===================== */
+
+function getPointsForRow(r: DGRowComputed): number {
+  const basePointsMap: Record<number, number> = {
+    1: 30,
+    2: 26,
+    3: 22,
+    4: 18,
+    5: 16,
+    6: 14,
+    7: 12,
+    8: 10,
+    9: 8,
+    10: 6,
+    11: 4,
+    12: 2,
+    13: 1,
+    14: 0,
+  }
+
+  let points = basePointsMap[r.posizione] ?? 0
+
+  if ((r.pp || "").trim().toUpperCase() === "PP") points += 1
+  if ((r.gv || "").trim().toUpperCase() === "GV") points += 1
+
+  return points
+}
+
 function TableCell({
   children,
   align,
@@ -1208,8 +1236,16 @@ function ResultsTable({
           flexWrap: "wrap",
         }}
       >
-        <div style={{ fontWeight: 900, fontSize: exporting ? 15 : undefined }}>{tableTitle}</div>
-        <div style={{ fontSize: exporting ? 13 : 12, opacity: 0.88, fontWeight: exporting ? 800 : undefined }}>
+        <div style={{ fontWeight: 900, fontSize: exporting ? 15 : undefined }}>
+          {tableTitle}
+        </div>
+        <div
+          style={{
+            fontSize: exporting ? 13 : 12,
+            opacity: 0.88,
+            fontWeight: exporting ? 800 : undefined,
+          }}
+        >
           {exporting ? `Partecipanti: ${previewRows.length}` : `${previewRows.length} righe`}
         </div>
       </div>
@@ -1232,35 +1268,126 @@ function ResultsTable({
             }}
           >
             <tr>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: 60 }}>
+              <th
+                style={{
+                  padding: exporting ? "11px 13px" : "12px 12px",
+                  textAlign: "left",
+                  fontSize: exporting ? 16 : 12,
+                  opacity: 0.8,
+                  width: 60,
+                }}
+              >
                 #
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 220 : 190 }}>
+              <th
+                style={{
+                  padding: exporting ? "11px 13px" : "12px 12px",
+                  textAlign: "left",
+                  fontSize: exporting ? 16 : 12,
+                  opacity: 0.8,
+                  width: exporting ? 220 : 190,
+                }}
+              >
                 Nome pilota
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "left", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 300 : 270 }}>
+              <th
+                style={{
+                  padding: exporting ? "11px 13px" : "12px 12px",
+                  textAlign: "left",
+                  fontSize: exporting ? 16 : 12,
+                  opacity: 0.8,
+                  width: exporting ? 270 : 240,
+                }}
+              >
                 Auto
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "right", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 170 : 145 }}>
+              <th
+                style={{
+                  padding: exporting ? "11px 13px" : "12px 12px",
+                  textAlign: "right",
+                  fontSize: exporting ? 16 : 12,
+                  opacity: 0.8,
+                  width: exporting ? 170 : 145,
+                }}
+              >
                 Distacchi
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 90 : 76 }}>
+              <th
+                style={{
+                  padding: exporting ? "11px 13px" : "12px 12px",
+                  textAlign: "center",
+                  fontSize: exporting ? 16 : 12,
+                  opacity: 0.8,
+                  width: exporting ? 90 : 76,
+                }}
+              >
                 PP
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 90 : 76 }}>
+              <th
+                style={{
+                  padding: exporting ? "11px 13px" : "12px 12px",
+                  textAlign: "center",
+                  fontSize: exporting ? 16 : 12,
+                  opacity: 0.8,
+                  width: exporting ? 90 : 76,
+                }}
+              >
                 GV
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 170 : 150 }}>
+              <th
+                style={{
+                  padding: exporting ? "11px 13px" : "12px 12px",
+                  textAlign: "center",
+                  fontSize: exporting ? 16 : 12,
+                  opacity: 0.8,
+                  width: exporting ? 170 : 150,
+                }}
+              >
                 DG
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 90 : 74 }}>
+              <th
+                style={{
+                  padding: exporting ? "11px 13px" : "12px 12px",
+                  textAlign: "center",
+                  fontSize: exporting ? 16 : 12,
+                  opacity: 0.8,
+                  width: exporting ? 90 : 74,
+                }}
+              >
                 Gara
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 90 : 74 }}>
+              <th
+                style={{
+                  padding: exporting ? "11px 13px" : "12px 12px",
+                  textAlign: "center",
+                  fontSize: exporting ? 16 : 12,
+                  opacity: 0.8,
+                  width: exporting ? 90 : 74,
+                }}
+              >
                 Lobby
               </th>
-              <th style={{ padding: exporting ? "11px 13px" : "12px 12px", textAlign: "center", fontSize: exporting ? 16 : 12, opacity: 0.8, width: exporting ? 150 : 125 }}>
+              <th
+                style={{
+                  padding: exporting ? "11px 13px" : "12px 12px",
+                  textAlign: "center",
+                  fontSize: exporting ? 16 : 12,
+                  opacity: 0.8,
+                  width: exporting ? 140 : 115,
+                }}
+              >
                 Lega
+              </th>
+              <th
+                style={{
+                  padding: exporting ? "11px 13px" : "12px 12px",
+                  textAlign: "center",
+                  fontSize: exporting ? 16 : 12,
+                  opacity: 0.8,
+                  width: exporting ? 86 : 70,
+                }}
+              >
+                Punti
               </th>
             </tr>
           </thead>
@@ -1271,8 +1398,42 @@ function ResultsTable({
               const isGv = (r.gv || "").trim().toUpperCase() === "GV"
               const fallbackBg = i % 2 === 0 ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.10)"
 
+              const rawDistacco = String(r.distacchi || "").trim().toUpperCase()
+              const isZeroPointsStatus =
+                rawDistacco === "DNF" || rawDistacco === "BOX" || rawDistacco === "DSQ"
+
+              const pointsValue = isZeroPointsStatus ? 0 : getPointsForRow(r)
+
+              const isP1 = r.posizione === 1
+              const isP2 = r.posizione === 2
+              const isP3 = r.posizione === 3
+              const isPodium = isP1 || isP2 || isP3
+
+              const podiumBg = isP1
+                ? "linear-gradient(180deg, rgba(255,215,0,1), rgba(255,200,0,0.95))"
+                : isP2
+                  ? "linear-gradient(180deg, rgba(220,220,220,0.96), rgba(185,185,185,0.96))"
+                  : "linear-gradient(180deg, rgba(205,127,50,0.96), rgba(168,102,38,0.96))"
+
+              const podiumBorder = isP1
+                ? "1px solid rgba(255,215,0,0.55)"
+                : isP2
+                  ? "1px solid rgba(220,220,220,0.42)"
+                  : "1px solid rgba(205,127,50,0.45)"
+
+              const podiumGlow = isP1
+                ? "0 0 18px rgba(255,215,0,0.35)"
+                : isP2
+                  ? "0 0 14px rgba(220,220,220,0.22)"
+                  : "0 0 14px rgba(205,127,50,0.22)"
+
+              const normalPointsColor = exporting ? "#ffffff" : "#ecfff5"
+
               return (
-                <tr key={`${r.posizione}-${r.nomePilota}-${i}`} style={rowStyleForPos(r.posizione, fallbackBg)}>
+                <tr
+                  key={`${r.posizione}-${r.nomePilota}-${i}`}
+                  style={rowStyleForPos(r.posizione, fallbackBg)}
+                >
                   <TableCell exporting={exporting}>
                     <PosBadge pos={r.posizione} />
                   </TableCell>
@@ -1284,7 +1445,11 @@ function ResultsTable({
                       fontWeight: exporting ? (r.posizione === 1 ? 800 : 700) : undefined,
                       letterSpacing: exporting ? "0.04em" : undefined,
                       color: exporting ? (r.posizione === 1 ? "#fff6cc" : "#ffffff") : undefined,
-                      textShadow: exporting ? (r.posizione === 1 ? "0 0 10px rgba(255,215,0,0.45)" : "none") : undefined,
+                      textShadow: exporting
+                        ? r.posizione === 1
+                          ? "0 0 10px rgba(255,215,0,0.45)"
+                          : "none"
+                        : undefined,
                     }}
                   >
                     {r.nomePilota}
@@ -1386,6 +1551,169 @@ function ResultsTable({
                     }}
                   >
                     {r.lega || "-"}
+                  </TableCell>
+
+                  <TableCell
+                    exporting={exporting}
+                    align="center"
+                    mono
+                    style={{
+                      whiteSpace: "nowrap",
+                      fontSize: exporting ? 16 : 13,
+                      fontWeight: 900,
+                    }}
+                  >
+                    {isPodium ? (
+                      <span
+                        style={{
+                          position: "relative",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          minWidth: exporting ? 30 : 26,
+                          height: exporting ? 20 : 18,
+                          padding: exporting ? "0 8px" : "0 7px",
+                          borderRadius: 999,
+                          background: podiumBg,
+                          border: podiumBorder,
+                          boxShadow: podiumGlow,
+                          color: "rgba(0,0,0,0.95)",
+                          fontWeight: 900,
+                          fontSize: exporting ? 12 : 11,
+                          lineHeight: 1,
+                          transform: "translateY(-1px)",
+                        }}
+                        title={
+                          isZeroPointsStatus
+                            ? "Punti gara: 0"
+                            : isPp && isGv
+                              ? "Bonus: PP + GV"
+                              : isPp
+                                ? "Bonus: PP"
+                                : isGv
+                                  ? "Bonus: GV"
+                                  : "Punti gara"
+                        }
+                      >
+                        <span>{pointsValue}</span>
+
+                        {(isPp || isGv) && (
+                          <span
+                            style={{
+                              position: "absolute",
+                              top: exporting ? -6 : -5,
+                              right:
+  isPp && isGv
+    ? (exporting ? -14 : -12)
+    : (exporting ? -9 : -7),
+                              display: "flex",
+                              gap: 1,
+                              fontSize: exporting ? 10 : 9,
+                              lineHeight: 1,
+                            }}
+                          >
+                            {isPp && (
+                              <span
+                                style={{
+                                  color: "#ffd700",
+                                  textShadow: "0 0 6px rgba(255,215,0,0.45)",
+                                }}
+                              >
+                                ★
+                              </span>
+                            )}
+
+                            {isGv && (
+                              <span
+                                style={{
+                                  color: "#b67cff",
+                                  textShadow: "0 0 6px rgba(160,90,255,0.45)",
+                                }}
+                              >
+                                ★
+                              </span>
+                            )}
+                          </span>
+                        )}
+                      </span>
+                    ) : (
+                      <span
+                        title={
+                          isZeroPointsStatus
+                            ? "Punti gara: 0"
+                            : isPp && isGv
+                              ? "Bonus: PP + GV"
+                              : isPp
+                                ? "Bonus: PP"
+                                : isGv
+                                  ? "Bonus: GV"
+                                  : "Punti gara"
+                        }
+                        style={{
+                          position: "relative",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          minWidth: exporting ? 34 : 30,
+                          height: exporting ? 20 : 18,
+                          padding: exporting ? "0 8px" : "0 7px",
+                          borderRadius: 999,
+                          border: "1px solid rgba(255,255,255,0.22)",
+                          background: "transparent",
+                          boxShadow: "none",
+                          color: normalPointsColor,
+                          fontWeight: 900,
+                          fontSize: exporting ? 16 : 14,
+                          fontFamily:
+                            "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                          letterSpacing: 0.1,
+                          textShadow: exporting
+                            ? "0 0 8px rgba(255,255,255,0.10)"
+                            : "0 0 8px rgba(64,224,208,0.12)",
+                        }}
+                      >
+                        <span>{pointsValue}</span>
+
+                        {(isPp || isGv) && (
+                          <span
+                            style={{
+                              position: "absolute",
+                              top: exporting ? -6 : -5,
+                              right:
+  isPp && isGv
+    ? (exporting ? -14 : -12)
+    : (exporting ? -9 : -7),
+                              display: "flex",
+                              gap: 1,
+                              fontSize: exporting ? 10 : 9,
+                              lineHeight: 1,
+                            }}
+                          >
+                            {isPp && (
+                              <span
+                                style={{
+                                  color: "#ffd700",
+                                  textShadow: "0 0 6px rgba(255,215,0,0.45)",
+                                }}
+                              >
+                                ★
+                              </span>
+                            )}
+
+                            {isGv && (
+                              <span
+                                style={{
+                                  color: "#b67cff",
+                                  textShadow: "0 0 6px rgba(160,90,255,0.45)",
+                                }}
+                              >
+                                ★
+                              </span>
+                            )}
+                          </span>
+                        )}
+                      </span>
+                    )}
                   </TableCell>
                 </tr>
               )

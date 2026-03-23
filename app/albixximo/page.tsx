@@ -59,6 +59,7 @@ type DGRowComputed = UnionRow & {
   computedRaceMs?: number | null
   computedNonComparable?: boolean
   computedDsq?: boolean
+  originalWasLapped?: boolean
 }
 
 const DEFAULT_EXPORT_TEXTS: ExportTexts = {
@@ -892,9 +893,17 @@ function rowStyleForPos(pos: number, fallback: string): React.CSSProperties {
   return { background: fallback }
 }
 
-function renderDistaccoCell(value: string, exporting = false) {
+function renderDistaccoCell(
+  value: string,
+  exporting = false,
+  forceDoppiatoPill = false
+) {
   const t = (value || "").trim()
   const u = t.toUpperCase()
+
+  if (forceDoppiatoPill) {
+    return <Pill left="DOPPIATO" variant="orange" exporting={exporting} />
+  }
 
   if (!t || t === "-") return "-"
 
@@ -1477,7 +1486,7 @@ function ResultsTable({
                       fontSize: exporting ? 17 : undefined,
                     }}
                   >
-                    {renderDistaccoCell(r.distacchi, exporting)}
+                    {renderDistaccoCell(r.distacchi, exporting, exporting && !!r.originalWasLapped)}
                   </TableCell>
 
                   <TableCell exporting={exporting} align="center" mono dim={!isPp}>
@@ -2104,63 +2113,66 @@ export default function Page() {
     const newLeaderMs = comparable[0]?.totalMs ?? null
 
     const comparableRows: DGRowComputed[] = comparable.map((item, idx) => {
-      const isLeader = idx === 0
-      const updatedDistacco =
-        newLeaderMs == null
-          ? item.row.distacchi
-          : isLeader
-            ? formatRaceTimeFromMs(item.totalMs)
-            : formatGapFromLeaderMs(item.totalMs - newLeaderMs)
+  const isLeader = idx === 0
+  const updatedDistacco =
+    newLeaderMs == null
+      ? item.row.distacchi
+      : isLeader
+        ? formatRaceTimeFromMs(item.totalMs)
+        : formatGapFromLeaderMs(item.totalMs - newLeaderMs)
 
-      return {
-        ...item.row,
-        posizione: idx + 1,
-        distacchi: updatedDistacco,
-        dgKind: item.dgKind,
-        dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
-        dgLabel:
-          item.dgKind === "P" || item.dgKind === "S"
-            ? formatDGLabel(item.dgSeconds, item.dgKind)
-            : item.dgKind === "DSQ"
-              ? "DSQ"
-              : "",
-        computedRaceMs: item.totalMs,
-        computedNonComparable: false,
-        computedDsq: false,
-      }
-    })
+  return {
+    ...item.row,
+    posizione: idx + 1,
+    distacchi: updatedDistacco,
+    dgKind: item.dgKind,
+    dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
+    dgLabel:
+      item.dgKind === "P" || item.dgKind === "S"
+        ? formatDGLabel(item.dgSeconds, item.dgKind)
+        : item.dgKind === "DSQ"
+          ? "DSQ"
+          : "",
+    computedRaceMs: item.totalMs,
+    computedNonComparable: false,
+    computedDsq: false,
+    originalWasLapped: isDoppiatoValue(item.row.distacchi),
+  }
+})
 
     const nonComparableRows: DGRowComputed[] = nonComparable
-      .sort((a, b) => a.originalIndex - b.originalIndex)
-      .map((item, idx) => ({
-        ...item.row,
-        posizione: comparableRows.length + idx + 1,
-        dgKind: item.dgKind,
-        dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
-        dgLabel:
-          item.dgKind === "P" || item.dgKind === "S"
-            ? formatDGLabel(item.dgSeconds, item.dgKind)
-            : item.dgKind === "DSQ"
-              ? "DSQ"
-              : "",
-        computedRaceMs: null,
-        computedNonComparable: true,
-        computedDsq: false,
-      }))
+  .sort((a, b) => a.originalIndex - b.originalIndex)
+  .map((item, idx) => ({
+    ...item.row,
+    posizione: comparableRows.length + idx + 1,
+    dgKind: item.dgKind,
+    dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
+    dgLabel:
+      item.dgKind === "P" || item.dgKind === "S"
+        ? formatDGLabel(item.dgSeconds, item.dgKind)
+        : item.dgKind === "DSQ"
+          ? "DSQ"
+          : "",
+    computedRaceMs: null,
+    computedNonComparable: true,
+    computedDsq: false,
+    originalWasLapped: isDoppiatoValue(item.row.distacchi),
+  }))
 
-    const dsqComputedRows: DGRowComputed[] = dsqRows
-      .sort((a, b) => a.originalIndex - b.originalIndex)
-      .map((item, idx) => ({
-        ...item.row,
-        posizione: comparableRows.length + nonComparableRows.length + idx + 1,
-        distacchi: "DSQ",
-        dgKind: "DSQ",
-        dgSeconds: 0,
-        dgLabel: "DSQ",
-        computedRaceMs: null,
-        computedNonComparable: false,
-        computedDsq: true,
-      }))
+const dsqComputedRows: DGRowComputed[] = dsqRows
+  .sort((a, b) => a.originalIndex - b.originalIndex)
+  .map((item, idx) => ({
+    ...item.row,
+    posizione: comparableRows.length + nonComparableRows.length + idx + 1,
+    distacchi: "DSQ",
+    dgKind: "DSQ",
+    dgSeconds: 0,
+    dgLabel: "DSQ",
+    computedRaceMs: null,
+    computedNonComparable: false,
+    computedDsq: true,
+    originalWasLapped: isDoppiatoValue(item.row.distacchi),
+  }))
 
     return [...comparableRows, ...nonComparableRows, ...dsqComputedRows]
   }, [displayRows, dgKinds, dgSeconds, dgLapOverrides])
