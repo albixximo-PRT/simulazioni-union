@@ -1605,7 +1605,7 @@ function ResultsTable({
                             style={{
                               position: "absolute",
                               top: exporting ? -6 : -5,
-                              right: exporting ? -10 : -8,
+                              right: exporting ? -4 : -3,
                               display: "flex",
                               gap: 1,
                               fontSize: exporting ? 10 : 9,
@@ -1673,7 +1673,7 @@ function ResultsTable({
                             style={{
                               position: "absolute",
                               top: exporting ? -6 : -5,
-                              right: exporting ? -10 : -8,
+                              right: exporting ? -4 : -3,
                               display: "flex",
                               gap: 1,
                               fontSize: exporting ? 10 : 9,
