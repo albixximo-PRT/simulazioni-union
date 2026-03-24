@@ -1153,7 +1153,7 @@ function AppHeader({
     src="/union_logo.png"
     alt="Union"
     style={{
-      height: 120,
+      height: 110,
       width: "auto",
       opacity: 0.98,
       filter:
