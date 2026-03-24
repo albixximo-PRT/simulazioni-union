@@ -1145,7 +1145,7 @@ title="Union Logo"
           position: "relative",
           display: "grid",
           placeItems: "center",
-          padding: 8,
+          padding: 0,
           borderRadius: 18,
           border: "1px solid rgba(255,255,255,0.12)",
           background: "rgba(0,0,0,0.18)",
