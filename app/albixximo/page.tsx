@@ -1137,10 +1137,10 @@ function AppHeader({
       </div>
 
       <a
-        href="/prt_logo.png"
-        target="_blank"
-        rel="noreferrer"
-        title="PRT Logo"
+        href="/union_logo.png"
+target="_blank"
+rel="noreferrer"
+title="Union Logo"
         style={{
           position: "relative",
           display: "grid",
