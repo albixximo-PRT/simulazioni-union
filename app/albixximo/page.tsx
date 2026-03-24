@@ -1408,10 +1408,24 @@ function ResultsTable({
               const fallbackBg = i % 2 === 0 ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.10)"
 
               const rawDistacco = String(r.distacchi || "").trim().toUpperCase()
-              const isZeroPointsStatus =
-                rawDistacco === "DNF" || rawDistacco === "BOX" || rawDistacco === "DSQ"
 
-              const pointsValue = isZeroPointsStatus ? 0 : getPointsForRow(r)
+const isBoxOrDsq =
+  rawDistacco === "BOX" || rawDistacco === "DSQ"
+
+const isDnf =
+  rawDistacco === "DNF"
+
+const isZeroPointsStatus = isBoxOrDsq || isDnf
+
+const bonusPoints =
+  (isPp ? 1 : 0) +
+  (isGv ? 1 : 0)
+
+const pointsValue = isBoxOrDsq
+  ? 0
+  : isDnf
+    ? bonusPoints
+    : getPointsForRow(r)
 
               const isP1 = r.posizione === 1
               const isP2 = r.posizione === 2
