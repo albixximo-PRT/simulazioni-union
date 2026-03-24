@@ -1172,9 +1172,9 @@ function AppHeader({
   style={{
     width: "100%",
     height: "100%",
-    objectFit: "contain",
+    objectFit: "cover",
     opacity: 0.98,
-    transform: "scale(1.2)",
+    transform: "scale(1.0)",
     filter:
       "drop-shadow(0 0 14px rgba(255,215,0,0.45)) drop-shadow(0 0 34px rgba(255,215,0,0.18))",
   }}
