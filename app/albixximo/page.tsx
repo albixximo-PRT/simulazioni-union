@@ -1137,22 +1137,24 @@ function AppHeader({
       </div>
 
       <a
-        href="/union_logo.png"
-target="_blank"
-rel="noreferrer"
-title="Union Logo"
-        style={{
-          position: "relative",
-          display: "grid",
-          placeItems: "center",
-          padding: 0,
-          borderRadius: 18,
-          border: "1px solid rgba(255,255,255,0.12)",
-          background: "rgba(0,0,0,0.18)",
-          textDecoration: "none",
-          flexShrink: 0,
-        }}
-      >
+  href="/union_logo.png"
+  target="_blank"
+  rel="noreferrer"
+  title="Union Logo"
+  style={{
+    position: "relative",
+    display: "grid",
+    placeItems: "center",
+    width: 88,
+    height: 88,
+    padding: 10,
+    borderRadius: 22,
+    border: "1px solid rgba(255,255,255,0.12)",
+    background: "rgba(0,0,0,0.18)",
+    textDecoration: "none",
+    flexShrink: 0,
+  }}
+>
         <div
           style={{
             position: "absolute",
@@ -1165,16 +1167,18 @@ title="Union Logo"
           }}
         />
         <img
-          src="/union_logo.png"
-          alt="Union"
-          style={{
-            height: 56,
-            width: "auto",
-            opacity: 0.95,
-            filter:
-              "drop-shadow(0 0 14px rgba(255,215,0,0.45)) drop-shadow(0 0 34px rgba(255,215,0,0.18))",
-          }}
-        />
+  src="/union_logo.png"
+  alt="Union"
+  style={{
+    width: "100%",
+    height: "100%",
+    objectFit: "contain",
+    opacity: 0.98,
+    transform: "scale(1.2)",
+    filter:
+      "drop-shadow(0 0 14px rgba(255,215,0,0.45)) drop-shadow(0 0 34px rgba(255,215,0,0.18))",
+  }}
+/>
       </a>
     </div>
   )
