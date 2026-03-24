@@ -1165,8 +1165,8 @@ title="Union Logo"
           }}
         />
         <img
-          src="/prt_logo.png"
-          alt="PRT"
+          src="/union_logo.png"
+          alt="Union"
           style={{
             height: 56,
             width: "auto",
