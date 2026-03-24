@@ -1142,44 +1142,25 @@ function AppHeader({
   rel="noreferrer"
   title="Union Logo"
   style={{
-    position: "relative",
-    display: "grid",
-    placeItems: "center",
-    width: 88,
-    height: 88,
-    padding: 10,
-    borderRadius: 22,
-    border: "1px solid rgba(255,255,255,0.12)",
-    background: "rgba(0,0,0,0.18)",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
     textDecoration: "none",
     flexShrink: 0,
   }}
 >
-        <div
-          style={{
-            position: "absolute",
-            inset: -6,
-            borderRadius: 22,
-            background: "radial-gradient(circle at 50% 40%, rgba(255,215,0,0.35), transparent 60%)",
-            filter: "blur(10px)",
-            opacity: 0.95,
-            pointerEvents: "none",
-          }}
-        />
-        <img
-  src="/union_logo.png"
-  alt="Union"
-  style={{
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-    opacity: 0.98,
-    transform: "scale(1.0)",
-    filter:
-      "drop-shadow(0 0 14px rgba(255,215,0,0.45)) drop-shadow(0 0 34px rgba(255,215,0,0.18))",
-  }}
-/>
-      </a>
+  <img
+    src="/union_logo.png"
+    alt="Union"
+    style={{
+      height: 80,
+      width: "auto",
+      opacity: 0.98,
+      filter:
+        "drop-shadow(0 0 18px rgba(255,215,0,0.55)) drop-shadow(0 0 40px rgba(255,215,0,0.25))",
+    }}
+  />
+</a>
     </div>
   )
 }
