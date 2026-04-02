@@ -3,6 +3,11 @@ import sharp from "sharp"
 
 export const runtime = "nodejs"
 
+const OCR_PRO_ENDPOINTS = [
+  "https://apipro1.ocr.space/parse/image",
+  "https://apipro2.ocr.space/parse/image",
+] as const
+
 /* -------------------- Helpers OCR -------------------- */
 
 function normalizeErrorMessage(x: any) {
@@ -23,22 +28,59 @@ async function fetchWithTimeout(url: string, opts: RequestInit, ms: number) {
 }
 
 async function callOcrSpace(apiKey: string, jpegBuffer: Buffer, engine: "1" | "2") {
-  const fd = new FormData()
-  fd.append("apikey", apiKey)
-  fd.append("language", "eng")
-  fd.append("OCREngine", engine)
-  fd.append("scale", "false")
-  fd.append("isTable", "false")
-  const jpegUint8 = new Uint8Array(jpegBuffer)
-  fd.append("file", new Blob([jpegUint8], { type: "image/jpeg" }), "gt7.jpg")
+  const TIMEOUT = 60000
 
-  const res = await fetchWithTimeout(
-    "https://apipro1.ocr.space/parse/image",
-    { method: "POST", body: fd },
-    60000
-  )
-  const data = await res.json().catch(() => ({}))
-  return { res, data }
+  function buildFormData() {
+    const fd = new FormData()
+    fd.append("apikey", apiKey)
+    fd.append("language", "eng")
+    fd.append("OCREngine", engine)
+    fd.append("scale", "false")
+    fd.append("isTable", "false")
+
+    const jpegUint8 = new Uint8Array(jpegBuffer)
+    fd.append("file", new Blob([jpegUint8], { type: "image/jpeg" }), "gt7.jpg")
+
+    return fd
+  }
+
+  // 🔁 PRO 1 → 2 tentativi
+  for (let i = 0; i < 2; i++) {
+    try {
+      const res = await fetchWithTimeout(
+        OCR_PRO_ENDPOINTS[0],
+        { method: "POST", body: buildFormData() },
+        TIMEOUT
+      )
+
+      const data = await res.json().catch(() => ({}))
+
+      if (res.ok && data?.ParsedResults?.length) {
+        return { res, data }
+      }
+    } catch {
+      // retry PRO 1
+    }
+  }
+
+  // 🔄 PRO 2 → fallback
+  try {
+    const res = await fetchWithTimeout(
+      OCR_PRO_ENDPOINTS[1],
+      { method: "POST", body: buildFormData() },
+      TIMEOUT
+    )
+
+    const data = await res.json().catch(() => ({}))
+
+    if (res.ok && data?.ParsedResults?.length) {
+      return { res, data }
+    }
+  } catch {
+    // fallback fallito
+  }
+
+  throw new Error("OCR.Space non disponibile o risposta non valida")
 }
 
 async function preprocessForOcr(input: Buffer) {
