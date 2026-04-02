@@ -1462,30 +1462,7 @@ function ResultsTable({
                         : undefined,
                     }}
                   >
-                    {String(r.nomePilota || "").trim() ? (
-                      r.nomePilota
-                    ) : (
-                      <span
-                        style={{
-                          display: "inline-flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          padding: exporting ? "10px 14px" : "8px 12px",
-                          borderRadius: 12,
-                          background: "rgba(239,68,68,0.18)",
-                          border: "1px solid rgba(239,68,68,0.42)",
-                          boxShadow: "0 0 14px rgba(239,68,68,0.14)",
-                          color: "#fee2e2",
-                          fontWeight: 900,
-                          fontSize: exporting ? 13 : 11,
-                          letterSpacing: 0.5,
-                          textTransform: "uppercase",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        Inserire Pilota
-                      </span>
-                    )}
+                    {r.nomePilota}
                   </TableCell>
 
                   <TableCell
@@ -1935,14 +1912,6 @@ export default function Page() {
   const [manualAutoOverrides, setManualAutoOverrides] = useState<Record<number, string>>({})
   const [manualAutoDraft, setManualAutoDraft] = useState<Record<number, string>>({})
 
-  const [showPilotModal, setShowPilotModal] = useState(false)
-  const [manualPilotOverrides, setManualPilotOverrides] = useState<Record<number, string>>({})
-  const [manualPilotDraft, setManualPilotDraft] = useState<Record<number, string>>({})
-
-  const [showDistaccoModal, setShowDistaccoModal] = useState(false)
-  const [manualDistaccoOverrides, setManualDistaccoOverrides] = useState<Record<number, string>>({})
-  const [manualDistaccoDraft, setManualDistaccoDraft] = useState<Record<number, string>>({})
-
   const [dgKinds, setDgKinds] = useState<Record<string, DGKind>>({})
   const [dgSeconds, setDgSeconds] = useState<Record<string, string>>({})
   const [dgLapOverrides, setDgLapOverrides] = useState<Record<string, string>>({})
@@ -2073,12 +2042,10 @@ export default function Page() {
   const displayRows = useMemo(() => {
     return rows.map((r) => ({
       ...r,
-      nomePilota: (manualPilotOverrides[r.posizione] ?? r.nomePilota ?? "").trim(),
       auto: (manualAutoOverrides[r.posizione] ?? r.auto ?? "").trim(),
-      distacchi: (manualDistaccoOverrides[r.posizione] ?? r.distacchi ?? "").trim(),
       gara: effectiveGara,
     }))
-  }, [rows, manualPilotOverrides, manualAutoOverrides, manualDistaccoOverrides, effectiveGara])
+  }, [rows, manualAutoOverrides, effectiveGara])
 
   const winnerPilot = useMemo(() => {
     const row = displayRows.find((r) => r.posizione === 1) || displayRows[0]
@@ -2324,34 +2291,6 @@ export default function Page() {
     return [header, ...body].join("\n")
   }, [finalRows])
 
-  function openPilotCorrectionModal() {
-    const nextDraft: Record<number, string> = {}
-    for (const row of rows) {
-      nextDraft[row.posizione] = (manualPilotOverrides[row.posizione] ?? row.nomePilota ?? "").trim()
-    }
-    setManualPilotDraft(nextDraft)
-    setShowPilotModal(true)
-  }
-
-  function applyPilotCorrections() {
-    const cleaned: Record<number, string> = {}
-    for (const row of rows) {
-      const draftValue = String(manualPilotDraft[row.posizione] ?? "").trim()
-      const originalValue = String(row.nomePilota ?? "").trim()
-      if (draftValue && draftValue !== originalValue) {
-        cleaned[row.posizione] = draftValue
-      }
-    }
-    setManualPilotOverrides(cleaned)
-    setShowPilotModal(false)
-  }
-
-  function resetPilotCorrections() {
-    setManualPilotOverrides({})
-    setManualPilotDraft({})
-    setShowPilotModal(false)
-  }
-
   function openAutoCorrectionModal() {
     const nextDraft: Record<number, string> = {}
     for (const row of rows) {
@@ -2380,48 +2319,6 @@ export default function Page() {
     setShowAutoModal(false)
   }
 
-  function openDistaccoCorrectionModal() {
-    const nextDraft: Record<number, string> = {}
-    for (const row of rows) {
-      nextDraft[row.posizione] = (manualDistaccoOverrides[row.posizione] ?? row.distacchi ?? "").trim()
-    }
-    setManualDistaccoDraft(nextDraft)
-    setShowDistaccoModal(true)
-  }
-
-  function applyDistaccoCorrections() {
-    const cleaned: Record<number, string> = {}
-    for (const row of rows) {
-      const draftValue = String(manualDistaccoDraft[row.posizione] ?? "").trim()
-      const originalValue = String(row.distacchi ?? "").trim()
-      if (draftValue && draftValue !== originalValue) {
-        cleaned[row.posizione] = draftValue
-      }
-    }
-    setManualDistaccoOverrides(cleaned)
-    setShowDistaccoModal(false)
-  }
-
-  function resetDistaccoCorrections() {
-    setManualDistaccoOverrides({})
-    setManualDistaccoDraft({})
-    setShowDistaccoModal(false)
-  }
-
-  function resetAllManualCorrections() {
-    setManualPilotOverrides({})
-    setManualPilotDraft({})
-    setShowPilotModal(false)
-
-    setManualAutoOverrides({})
-    setManualAutoDraft({})
-    setShowAutoModal(false)
-
-    setManualDistaccoOverrides({})
-    setManualDistaccoDraft({})
-    setShowDistaccoModal(false)
-  }
-
   function handleLogin() {
     if (inputPassword === APP_PASSWORD) {
       setAuthorized(true)
@@ -2446,19 +2343,9 @@ export default function Page() {
     setDetectedBestLapDriver("")
     setDetectedRaceOrder([])
     setManualGaraOverride("")
-
-    setManualPilotOverrides({})
-    setManualPilotDraft({})
-    setShowPilotModal(false)
-
     setManualAutoOverrides({})
     setManualAutoDraft({})
     setShowAutoModal(false)
-
-    setManualDistaccoOverrides({})
-    setManualDistaccoDraft({})
-    setShowDistaccoModal(false)
-
     setDgKinds({})
     setDgSeconds({})
     setDgLapOverrides({})
@@ -2542,19 +2429,9 @@ export default function Page() {
     setDetectedBestLapDriver("")
     setDetectedRaceOrder([])
     setManualGaraOverride("")
-
-    setManualPilotOverrides({})
-    setManualPilotDraft({})
-    setShowPilotModal(false)
-
     setManualAutoOverrides({})
     setManualAutoDraft({})
     setShowAutoModal(false)
-
-    setManualDistaccoOverrides({})
-    setManualDistaccoDraft({})
-    setShowDistaccoModal(false)
-
     setDgKinds({})
     setDgSeconds({})
     setDgLapOverrides({})
@@ -3217,26 +3094,11 @@ export default function Page() {
               >
                 <div style={{ fontSize: 13, fontWeight: 800 }}>
                   {matchSummary.fields.auto === "warn"
-                    ? "Correzioni Manuali disponibili. Auto sospette rilevate."
-                    : "Correzioni Manuali"}
+                    ? "Auto sospette rilevate. Puoi correggerle manualmente."
+                    : hasManualAutoOverrides
+                      ? "Correzioni auto manuali attive."
+                      : "Correzione auto manuale opzionale."}
                 </div>
-
-                <button
-                  onClick={openPilotCorrectionModal}
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,0.16)",
-                    background: "rgba(255,255,255,0.08)",
-                    color: "white",
-                    cursor: "pointer",
-                    fontWeight: 800,
-                    textTransform: "uppercase",
-                    fontSize: 12,
-                  }}
-                >
-                  Modifica Pilota
-                </button>
 
                 <button
                   onClick={openAutoCorrectionModal}
@@ -3262,41 +3124,26 @@ export default function Page() {
                   Modifica Auto
                 </button>
 
-                <button
-                  onClick={openDistaccoCorrectionModal}
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,0.16)",
-                    background: "rgba(255,255,255,0.08)",
-                    color: "white",
-                    cursor: "pointer",
-                    fontWeight: 800,
-                    textTransform: "uppercase",
-                    fontSize: 12,
-                  }}
-                >
-                  Modifica Distacco
-                </button>
+                {hasManualAutoOverrides && (
+                  <button
+                    onClick={resetAutoCorrections}
+                    style={{
+                      padding: "10px 12px",
+                      borderRadius: 10,
+                      border: "1px solid rgba(255,255,255,0.14)",
+                      background: "rgba(255,255,255,0.06)",
+                      color: "white",
+                      cursor: "pointer",
+                      fontWeight: 800,
+                      textTransform: "uppercase",
+                      fontSize: 12,
+                    }}
+                  >
+                    Reset auto manuali
+                  </button>
+                )}
               </div>
             )}
-
-            <button
-                  onClick={resetAllManualCorrections}
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,0.14)",
-                    background: "rgba(255,255,255,0.06)",
-                    color: "white",
-                    cursor: "pointer",
-                    fontWeight: 800,
-                    textTransform: "uppercase",
-                    fontSize: 12,
-                  }}
-                >
-                  Reset
-                </button>
 
             {displayRows.length > 0 && (
               <div
@@ -3791,487 +3638,6 @@ export default function Page() {
         </div>
       </div>
 
-      {showPilotModal && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.72)",
-            backdropFilter: "blur(6px)",
-            display: "grid",
-            placeItems: "center",
-            zIndex: 9999,
-            padding: 20,
-          }}
-        >
-          <div
-            style={{
-              width: "100%",
-              maxWidth: 1100,
-              borderRadius: 22,
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "linear-gradient(180deg, rgba(18,22,31,0.98), rgba(8,10,15,0.98))",
-              boxShadow: "0 20px 80px rgba(0,0,0,0.55)",
-              padding: 20,
-              display: "grid",
-              gap: 16,
-            }}
-          >
-            <div>
-              <div style={{ fontSize: 22, fontWeight: 900 }}>Correzione Pilota Manuale</div>
-              <div style={{ marginTop: 6, fontSize: 13, opacity: 0.76 }}>
-                Modifica manualmente il nome pilota. Le correzioni verranno applicate a tabella, DG, CSV e PNG.
-              </div>
-            </div>
-
-            <div
-              style={{
-                borderRadius: 16,
-                border: "1px solid rgba(255,255,255,0.10)",
-                background: "rgba(0,0,0,0.22)",
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  maxHeight: "60vh",
-                  overflowY: "auto",
-                  overflowX: "hidden",
-                }}
-              >
-                <table
-                  style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    tableLayout: "fixed",
-                  }}
-                >
-                  <thead
-                    style={{
-                      position: "sticky",
-                      top: 0,
-                      zIndex: 2,
-                      background: "rgba(10,12,18,0.96)",
-                      backdropFilter: "blur(10px)",
-                    }}
-                  >
-                    <tr>
-                      <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 70 }}>#</th>
-                      <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 320 }}>Pilota OCR</th>
-                      <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8 }}>Pilota corretto</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((row) => {
-                      const currentValue = String(manualPilotDraft[row.posizione] ?? "").trim()
-                      const originalValue = String(row.nomePilota ?? "").trim()
-                      const changed = currentValue !== originalValue
-
-                      return (
-                        <tr
-                          key={`manual-pilot-${row.posizione}`}
-                          style={{
-                            background: changed
-                              ? "linear-gradient(90deg, rgba(160,90,255,0.10), rgba(255,255,255,0.02))"
-                              : "transparent",
-                          }}
-                        >
-                          <td style={{ padding: "12px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                            <PosBadge pos={row.posizione} />
-                          </td>
-
-                          <td
-                            style={{
-                              padding: "12px",
-                              borderBottom: "1px solid rgba(255,255,255,0.08)",
-                              color: "rgba(255,255,255,0.86)",
-                              fontWeight: 700,
-                            }}
-                          >
-                            {row.nomePilota || "-"}
-                          </td>
-
-                          <td
-  style={{
-    padding: "12px",
-    borderBottom: "1px solid rgba(255,255,255,0.08)",
-  }}
->
-  <div style={{ display: "grid", gap: 8 }}>
-    <input
-      value={manualPilotDraft[row.posizione] ?? ""}
-      onChange={(e) =>
-        setManualPilotDraft((prev) => ({
-          ...prev,
-          [row.posizione]: e.target.value,
-        }))
-      }
-      style={{
-        width: "100%",
-        padding: "10px 12px",
-        borderRadius: 10,
-        border: changed
-          ? "1px solid rgba(160,90,255,0.30)"
-          : "1px solid rgba(255,255,255,0.14)",
-        background: "rgba(0,0,0,0.24)",
-        color: "white",
-        boxSizing: "border-box",
-      }}
-    />
-
-    <select
-      defaultValue=""
-      onChange={(e) => {
-  const selected = e.target.value
-  if (!selected) return
-
-  setManualPilotDraft((prev) => {
-    const next = { ...prev }
-
-    const otherRow = rows.find(
-      (candidate) =>
-        candidate.posizione !== row.posizione &&
-        String(next[candidate.posizione] ?? candidate.nomePilota ?? "").trim() === selected
-    )
-
-    if (otherRow) {
-      next[otherRow.posizione] = ""
-    }
-
-    next[row.posizione] = selected
-    return next
-  })
-
-  e.currentTarget.value = ""
-}}
-      style={{
-        width: "100%",
-        padding: "10px 12px",
-        borderRadius: 10,
-        border: "1px solid rgba(255,255,255,0.14)",
-        background: "rgba(0,0,0,0.24)",
-        color: "white",
-        boxSizing: "border-box",
-      }}
-    >
-      <option value="" style={{ background: "#11151d", color: "white" }}>
-        Sostituisci con...
-      </option>
-
-      {rows
-        .filter((candidate) => candidate.posizione !== row.posizione)
-        .map((candidate) => (
-          <option
-            key={`pilot-option-${row.posizione}-${candidate.posizione}`}
-            value={candidate.nomePilota}
-            style={{ background: "#11151d", color: "white" }}
-          >
-            {candidate.nomePilota}
-          </option>
-        ))}
-    </select>
-  </div>
-</td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, flexWrap: "wrap" }}>
-              <button
-                onClick={() => setShowPilotModal(false)}
-                style={{
-                  padding: "12px 16px",
-                  borderRadius: 14,
-                  border: "1px solid rgba(255,255,255,0.14)",
-                  background: "rgba(255,255,255,0.06)",
-                  color: "white",
-                  cursor: "pointer",
-                  fontWeight: 900,
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                }}
-              >
-                Chiudi
-              </button>
-
-              <button
-                onClick={resetPilotCorrections}
-                style={{
-                  padding: "12px 16px",
-                  borderRadius: 14,
-                  border: "1px solid rgba(255,255,255,0.14)",
-                  background: "rgba(255,255,255,0.06)",
-                  color: "white",
-                  cursor: "pointer",
-                  fontWeight: 900,
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                }}
-              >
-                Reset
-              </button>
-
-              <button
-                onClick={applyPilotCorrections}
-                style={{
-                  padding: "12px 16px",
-                  borderRadius: 14,
-                  border: "1px solid rgba(160,90,255,0.30)",
-                  background: "rgba(160,90,255,0.20)",
-                  color: "white",
-                  cursor: "pointer",
-                  fontWeight: 900,
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                  boxShadow: "0 0 22px rgba(160,90,255,0.12)",
-                }}
-              >
-                Applica correzioni
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {showDistaccoModal && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.72)",
-            backdropFilter: "blur(6px)",
-            display: "grid",
-            placeItems: "center",
-            zIndex: 9999,
-            padding: 20,
-          }}
-        >
-          <div
-            style={{
-              width: "100%",
-              maxWidth: 1100,
-              borderRadius: 22,
-              border: "1px solid rgba(255,255,255,0.12)",
-              background: "linear-gradient(180deg, rgba(18,22,31,0.98), rgba(8,10,15,0.98))",
-              boxShadow: "0 20px 80px rgba(0,0,0,0.55)",
-              padding: 20,
-              display: "grid",
-              gap: 16,
-            }}
-          >
-            <div>
-              <div style={{ fontSize: 22, fontWeight: 900 }}>Correzione Distacco Manuale</div>
-              <div style={{ marginTop: 6, fontSize: 13, opacity: 0.76 }}>
-                Inserisci un distacco manuale oppure uno stato come DOPPIATO, DNF o BOX. Le correzioni verranno applicate a tabella, DG, CSV e PNG.
-              </div>
-            </div>
-
-            <div
-              style={{
-                borderRadius: 16,
-                border: "1px solid rgba(255,255,255,0.10)",
-                background: "rgba(0,0,0,0.22)",
-                overflow: "hidden",
-              }}
-            >
-              <div
-                style={{
-                  maxHeight: "60vh",
-                  overflowY: "auto",
-                  overflowX: "hidden",
-                }}
-              >
-                <table
-                  style={{
-                    width: "100%",
-                    borderCollapse: "collapse",
-                    tableLayout: "fixed",
-                  }}
-                >
-                  <thead
-                    style={{
-                      position: "sticky",
-                      top: 0,
-                      zIndex: 2,
-                      background: "rgba(10,12,18,0.96)",
-                      backdropFilter: "blur(10px)",
-                    }}
-                  >
-                    <tr>
-                      <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 70 }}>#</th>
-                      <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 280 }}>Pilota</th>
-                      <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 220 }}>Distacco OCR</th>
-                      <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8 }}>Distacco corretto</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {rows.map((row) => {
-                      const currentValue = String(manualDistaccoDraft[row.posizione] ?? "").trim()
-                      const originalValue = String(row.distacchi ?? "").trim()
-                      const changed = currentValue !== originalValue
-
-                      return (
-                        <tr
-                          key={`manual-distacco-${row.posizione}`}
-                          style={{
-                            background: changed
-                              ? "linear-gradient(90deg, rgba(160,90,255,0.10), rgba(255,255,255,0.02))"
-                              : "transparent",
-                          }}
-                        >
-                          <td style={{ padding: "12px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                            <PosBadge pos={row.posizione} />
-                          </td>
-
-                          <td
-                            style={{
-                              padding: "12px",
-                              borderBottom: "1px solid rgba(255,255,255,0.08)",
-                              color: "rgba(255,255,255,0.86)",
-                              fontWeight: 700,
-                            }}
-                          >
-                            {row.nomePilota || "-"}
-                          </td>
-
-                          <td
-                            style={{
-                              padding: "12px",
-                              borderBottom: "1px solid rgba(255,255,255,0.08)",
-                              color: "rgba(255,255,255,0.86)",
-                              fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                              fontSize: 13,
-                            }}
-                          >
-                            {row.distacchi || "-"}
-                          </td>
-
-                          <td
-  style={{
-    padding: "12px",
-    borderBottom: "1px solid rgba(255,255,255,0.08)",
-    display: "grid",
-    gap: 8,
-  }}
->
-  <input
-    value={manualDistaccoDraft[row.posizione] ?? ""}
-    onChange={(e) =>
-      setManualDistaccoDraft((prev) => ({
-        ...prev,
-        [row.posizione]: e.target.value,
-      }))
-    }
-    placeholder="Es. +12.345 / +01:14.960 / DOPPIATO / DNF / BOX"
-    style={{
-      width: "100%",
-      padding: "10px 12px",
-      borderRadius: 10,
-      border: changed
-        ? "1px solid rgba(160,90,255,0.30)"
-        : "1px solid rgba(255,255,255,0.14)",
-      background: "rgba(0,0,0,0.24)",
-      color: "white",
-      boxSizing: "border-box",
-    }}
-  />
-
-  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-    {["DOPPIATO", "DNF", "BOX"].map((label) => (
-      <button
-        key={label}
-        onClick={() =>
-          setManualDistaccoDraft((prev) => ({
-            ...prev,
-            [row.posizione]: label,
-          }))
-        }
-        style={{
-          padding: "6px 10px",
-          borderRadius: 8,
-          border: "1px solid rgba(255,255,255,0.16)",
-          background: "rgba(255,255,255,0.08)",
-          color: "white",
-          cursor: "pointer",
-          fontSize: 11,
-          fontWeight: 800,
-          textTransform: "uppercase",
-        }}
-      >
-        {label}
-      </button>
-    ))}
-  </div>
-</td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, flexWrap: "wrap" }}>
-              <button
-                onClick={() => setShowDistaccoModal(false)}
-                style={{
-                  padding: "12px 16px",
-                  borderRadius: 14,
-                  border: "1px solid rgba(255,255,255,0.14)",
-                  background: "rgba(255,255,255,0.06)",
-                  color: "white",
-                  cursor: "pointer",
-                  fontWeight: 900,
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                }}
-              >
-                Chiudi
-              </button>
-
-              <button
-                onClick={resetDistaccoCorrections}
-                style={{
-                  padding: "12px 16px",
-                  borderRadius: 14,
-                  border: "1px solid rgba(255,255,255,0.14)",
-                  background: "rgba(255,255,255,0.06)",
-                  color: "white",
-                  cursor: "pointer",
-                  fontWeight: 900,
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                }}
-              >
-                Reset
-              </button>
-
-              <button
-                onClick={applyDistaccoCorrections}
-                style={{
-                  padding: "12px 16px",
-                  borderRadius: 14,
-                  border: "1px solid rgba(160,90,255,0.30)",
-                  background: "rgba(160,90,255,0.20)",
-                  color: "white",
-                  cursor: "pointer",
-                  fontWeight: 900,
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                  boxShadow: "0 0 22px rgba(160,90,255,0.12)",
-                }}
-              >
-                Applica correzioni
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-      
       {showAutoModal && (
         <div
           style={{
@@ -4299,7 +3665,7 @@ export default function Page() {
             }}
           >
             <div>
-              <div style={{ fontSize: 22, fontWeight: 900 }}>Advanced Manual Tweaks</div>
+              <div style={{ fontSize: 22, fontWeight: 900 }}>Correzione Auto Manuale</div>
               <div style={{ marginTop: 6, fontSize: 13, opacity: 0.76 }}>
                 Modifica solo le auto non corrette rilevate da OCR. Le correzioni verranno applicate a tabella, CSV e PNG.
               </div>
