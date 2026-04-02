@@ -59,6 +59,7 @@ type DGRowComputed = UnionRow & {
   computedRaceMs?: number | null
   computedNonComparable?: boolean
   computedDsq?: boolean
+  originalWasLapped?: boolean
 }
 
 const DEFAULT_EXPORT_TEXTS: ExportTexts = {
@@ -892,9 +893,17 @@ function rowStyleForPos(pos: number, fallback: string): React.CSSProperties {
   return { background: fallback }
 }
 
-function renderDistaccoCell(value: string, exporting = false) {
+function renderDistaccoCell(
+  value: string,
+  exporting = false,
+  forceDoppiatoPill = false
+) {
   const t = (value || "").trim()
   const u = t.toUpperCase()
+
+  if (forceDoppiatoPill) {
+    return <Pill left="DOPPIATO" variant="orange" exporting={exporting} />
+  }
 
   if (!t || t === "-") return "-"
 
@@ -1128,45 +1137,30 @@ function AppHeader({
       </div>
 
       <a
-        href="/prt_logo.png"
-        target="_blank"
-        rel="noreferrer"
-        title="PRT Logo"
-        style={{
-          position: "relative",
-          display: "grid",
-          placeItems: "center",
-          padding: 8,
-          borderRadius: 18,
-          border: "1px solid rgba(255,255,255,0.12)",
-          background: "rgba(0,0,0,0.18)",
-          textDecoration: "none",
-          flexShrink: 0,
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            inset: -6,
-            borderRadius: 22,
-            background: "radial-gradient(circle at 50% 40%, rgba(255,215,0,0.35), transparent 60%)",
-            filter: "blur(10px)",
-            opacity: 0.95,
-            pointerEvents: "none",
-          }}
-        />
-        <img
-          src="/prt_logo.png"
-          alt="PRT"
-          style={{
-            height: 56,
-            width: "auto",
-            opacity: 0.95,
-            filter:
-              "drop-shadow(0 0 14px rgba(255,215,0,0.45)) drop-shadow(0 0 34px rgba(255,215,0,0.18))",
-          }}
-        />
-      </a>
+  href="/union_logo.png"
+  target="_blank"
+  rel="noreferrer"
+  title="Union Logo"
+  style={{
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    textDecoration: "none",
+    flexShrink: 0,
+  }}
+>
+  <img
+    src="/union_logo.png"
+    alt="Union"
+    style={{
+      height: 110,
+      width: "auto",
+      opacity: 0.98,
+      filter:
+        "drop-shadow(0 0 18px rgba(255,215,0,0.55)) drop-shadow(0 0 40px rgba(255,215,0,0.25))",
+    }}
+  />
+</a>
     </div>
   )
 }
@@ -1399,10 +1393,24 @@ function ResultsTable({
               const fallbackBg = i % 2 === 0 ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.10)"
 
               const rawDistacco = String(r.distacchi || "").trim().toUpperCase()
-              const isZeroPointsStatus =
-                rawDistacco === "DNF" || rawDistacco === "BOX" || rawDistacco === "DSQ"
 
-              const pointsValue = isZeroPointsStatus ? 0 : getPointsForRow(r)
+const isBoxOrDsq =
+  rawDistacco === "BOX" || rawDistacco === "DSQ"
+
+const isDnf =
+  rawDistacco === "DNF"
+
+const isZeroPointsStatus = isBoxOrDsq || isDnf
+
+const bonusPoints =
+  (isPp ? 1 : 0) +
+  (isGv ? 1 : 0)
+
+const pointsValue = isBoxOrDsq
+  ? 0
+  : isDnf
+    ? bonusPoints
+    : getPointsForRow(r)
 
               const isP1 = r.posizione === 1
               const isP2 = r.posizione === 2
@@ -1477,7 +1485,7 @@ function ResultsTable({
                       fontSize: exporting ? 17 : undefined,
                     }}
                   >
-                    {renderDistaccoCell(r.distacchi, exporting)}
+                    {renderDistaccoCell(r.distacchi, exporting, exporting && !!r.originalWasLapped)}
                   </TableCell>
 
                   <TableCell exporting={exporting} align="center" mono dim={!isPp}>
@@ -2104,63 +2112,66 @@ export default function Page() {
     const newLeaderMs = comparable[0]?.totalMs ?? null
 
     const comparableRows: DGRowComputed[] = comparable.map((item, idx) => {
-      const isLeader = idx === 0
-      const updatedDistacco =
-        newLeaderMs == null
-          ? item.row.distacchi
-          : isLeader
-            ? formatRaceTimeFromMs(item.totalMs)
-            : formatGapFromLeaderMs(item.totalMs - newLeaderMs)
+  const isLeader = idx === 0
+  const updatedDistacco =
+    newLeaderMs == null
+      ? item.row.distacchi
+      : isLeader
+        ? formatRaceTimeFromMs(item.totalMs)
+        : formatGapFromLeaderMs(item.totalMs - newLeaderMs)
 
-      return {
-        ...item.row,
-        posizione: idx + 1,
-        distacchi: updatedDistacco,
-        dgKind: item.dgKind,
-        dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
-        dgLabel:
-          item.dgKind === "P" || item.dgKind === "S"
-            ? formatDGLabel(item.dgSeconds, item.dgKind)
-            : item.dgKind === "DSQ"
-              ? "DSQ"
-              : "",
-        computedRaceMs: item.totalMs,
-        computedNonComparable: false,
-        computedDsq: false,
-      }
-    })
+  return {
+    ...item.row,
+    posizione: idx + 1,
+    distacchi: updatedDistacco,
+    dgKind: item.dgKind,
+    dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
+    dgLabel:
+      item.dgKind === "P" || item.dgKind === "S"
+        ? formatDGLabel(item.dgSeconds, item.dgKind)
+        : item.dgKind === "DSQ"
+          ? "DSQ"
+          : "",
+    computedRaceMs: item.totalMs,
+    computedNonComparable: false,
+    computedDsq: false,
+    originalWasLapped: isDoppiatoValue(item.row.distacchi),
+  }
+})
 
     const nonComparableRows: DGRowComputed[] = nonComparable
-      .sort((a, b) => a.originalIndex - b.originalIndex)
-      .map((item, idx) => ({
-        ...item.row,
-        posizione: comparableRows.length + idx + 1,
-        dgKind: item.dgKind,
-        dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
-        dgLabel:
-          item.dgKind === "P" || item.dgKind === "S"
-            ? formatDGLabel(item.dgSeconds, item.dgKind)
-            : item.dgKind === "DSQ"
-              ? "DSQ"
-              : "",
-        computedRaceMs: null,
-        computedNonComparable: true,
-        computedDsq: false,
-      }))
+  .sort((a, b) => a.originalIndex - b.originalIndex)
+  .map((item, idx) => ({
+    ...item.row,
+    posizione: comparableRows.length + idx + 1,
+    dgKind: item.dgKind,
+    dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
+    dgLabel:
+      item.dgKind === "P" || item.dgKind === "S"
+        ? formatDGLabel(item.dgSeconds, item.dgKind)
+        : item.dgKind === "DSQ"
+          ? "DSQ"
+          : "",
+    computedRaceMs: null,
+    computedNonComparable: true,
+    computedDsq: false,
+    originalWasLapped: isDoppiatoValue(item.row.distacchi),
+  }))
 
-    const dsqComputedRows: DGRowComputed[] = dsqRows
-      .sort((a, b) => a.originalIndex - b.originalIndex)
-      .map((item, idx) => ({
-        ...item.row,
-        posizione: comparableRows.length + nonComparableRows.length + idx + 1,
-        distacchi: "DSQ",
-        dgKind: "DSQ",
-        dgSeconds: 0,
-        dgLabel: "DSQ",
-        computedRaceMs: null,
-        computedNonComparable: false,
-        computedDsq: true,
-      }))
+const dsqComputedRows: DGRowComputed[] = dsqRows
+  .sort((a, b) => a.originalIndex - b.originalIndex)
+  .map((item, idx) => ({
+    ...item.row,
+    posizione: comparableRows.length + nonComparableRows.length + idx + 1,
+    distacchi: "DSQ",
+    dgKind: "DSQ",
+    dgSeconds: 0,
+    dgLabel: "DSQ",
+    computedRaceMs: null,
+    computedNonComparable: false,
+    computedDsq: true,
+    originalWasLapped: isDoppiatoValue(item.row.distacchi),
+  }))
 
     return [...comparableRows, ...nonComparableRows, ...dsqComputedRows]
   }, [displayRows, dgKinds, dgSeconds, dgLapOverrides])

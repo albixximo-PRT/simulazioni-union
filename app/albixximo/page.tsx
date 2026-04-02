@@ -795,6 +795,7 @@ function Pill({
     </span>
   )
 }
+
 function PosBadge({ pos }: { pos: number }) {
   const base: React.CSSProperties = {
     display: "inline-flex",
@@ -914,7 +915,6 @@ function renderDistaccoCell(
 
   return t
 }
-
 function renderDGCell(
   kind: DGKind | undefined,
   seconds: number | undefined,
@@ -957,16 +957,16 @@ function renderDGCell(
   const formatted = `+${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}.000`
 
   return (
-  <span
-    style={{
-      display: "inline-flex",
-      alignItems: "baseline",
-      justifyContent: "center",
-      gap: exporting ? 8 : 7,
-      whiteSpace: "nowrap",
-      lineHeight: 1,
-    }}
-  >
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "baseline",
+        justifyContent: "center",
+        gap: exporting ? 8 : 7,
+        whiteSpace: "nowrap",
+        lineHeight: 1,
+      }}
+    >
       <span
         style={{
           color: timeColor,
@@ -984,38 +984,38 @@ function renderDGCell(
       </span>
 
       <span
-  style={{
-    color: "rgba(255,255,255,0.92)",
-    fontWeight: 800,
-    fontSize: exporting ? 13 : 12,
-    lineHeight: 1,
-    display: "inline-block",
-    transform: "translateY(-1px)",
-  }}
->
-  |
-</span>
+        style={{
+          color: "rgba(255,255,255,0.92)",
+          fontWeight: 800,
+          fontSize: exporting ? 13 : 12,
+          lineHeight: 1,
+          display: "inline-block",
+          transform: "translateY(-1px)",
+        }}
+      >
+        |
+      </span>
 
       <span
-  style={{
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: exporting ? 24 : 20,
-    height: exporting ? 20 : 18,
-    padding: exporting ? "0 8px" : "0 7px",
-    borderRadius: 999,
-    background: pillBg,
-    border: pillBorder,
-    boxShadow: pillShadow,
-    color: "rgba(0,0,0,0.92)",
-    fontWeight: 900,
-    fontSize: exporting ? 12 : 11,
-    lineHeight: 1,
-    textTransform: "uppercase",
-    transform: "translateY(-1px)",
-  }}
->
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minWidth: exporting ? 24 : 20,
+          height: exporting ? 20 : 18,
+          padding: exporting ? "0 8px" : "0 7px",
+          borderRadius: 999,
+          background: pillBg,
+          border: pillBorder,
+          boxShadow: pillShadow,
+          color: "rgba(0,0,0,0.92)",
+          fontWeight: 900,
+          fontSize: exporting ? 12 : 11,
+          lineHeight: 1,
+          textTransform: "uppercase",
+          transform: "translateY(-1px)",
+        }}
+      >
         {kind}
       </span>
     </span>
@@ -1137,30 +1137,30 @@ function AppHeader({
       </div>
 
       <a
-  href="/union_logo.png"
-  target="_blank"
-  rel="noreferrer"
-  title="Union Logo"
-  style={{
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    textDecoration: "none",
-    flexShrink: 0,
-  }}
->
-  <img
-    src="/union_logo.png"
-    alt="Union"
-    style={{
-      height: 110,
-      width: "auto",
-      opacity: 0.98,
-      filter:
-        "drop-shadow(0 0 18px rgba(255,215,0,0.55)) drop-shadow(0 0 40px rgba(255,215,0,0.25))",
-    }}
-  />
-</a>
+        href="/union_logo.png"
+        target="_blank"
+        rel="noreferrer"
+        title="Union Logo"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          textDecoration: "none",
+          flexShrink: 0,
+        }}
+      >
+        <img
+          src="/union_logo.png"
+          alt="Union"
+          style={{
+            height: 110,
+            width: "auto",
+            opacity: 0.98,
+            filter:
+              "drop-shadow(0 0 18px rgba(255,215,0,0.55)) drop-shadow(0 0 40px rgba(255,215,0,0.25))",
+          }}
+        />
+      </a>
     </div>
   )
 }
@@ -1206,10 +1206,12 @@ function ResultsTable({
   previewRows,
   exporting = false,
   tableTitle = "Classifica Union (output)",
+  roundFinalMode = false,
 }: {
   previewRows: DGRowComputed[]
   exporting?: boolean
   tableTitle?: string
+  roundFinalMode?: boolean
 }) {
   return (
     <div
@@ -1348,7 +1350,7 @@ function ResultsTable({
                   width: exporting ? 90 : 74,
                 }}
               >
-                Gara
+                {exporting && roundFinalMode ? "ROUND" : "Gara"}
               </th>
               <th
                 style={{
@@ -1378,10 +1380,10 @@ function ResultsTable({
                   textAlign: "center",
                   fontSize: exporting ? 16 : 12,
                   opacity: 0.8,
-                  width: exporting ? 86 : 70,
+                  width: exporting ? 150 : 70,
                 }}
               >
-                Punti
+                {exporting && roundFinalMode ? "SUPERFINALS" : "Punti"}
               </th>
             </tr>
           </thead>
@@ -1394,23 +1396,23 @@ function ResultsTable({
 
               const rawDistacco = String(r.distacchi || "").trim().toUpperCase()
 
-const isBoxOrDsq =
-  rawDistacco === "BOX" || rawDistacco === "DSQ"
+              const isBoxOrDsq =
+                rawDistacco === "BOX" || rawDistacco === "DSQ"
 
-const isDnf =
-  rawDistacco === "DNF"
+              const isDnf =
+                rawDistacco === "DNF"
 
-const isZeroPointsStatus = isBoxOrDsq || isDnf
+              const isZeroPointsStatus = isBoxOrDsq || isDnf
 
-const bonusPoints =
-  (isPp ? 1 : 0) +
-  (isGv ? 1 : 0)
+              const bonusPoints =
+                (isPp ? 1 : 0) +
+                (isGv ? 1 : 0)
 
-const pointsValue = isBoxOrDsq
-  ? 0
-  : isDnf
-    ? bonusPoints
-    : getPointsForRow(r)
+              const pointsValue = isBoxOrDsq
+                ? 0
+                : isDnf
+                  ? bonusPoints
+                  : getPointsForRow(r)
 
               const isP1 = r.posizione === 1
               const isP2 = r.posizione === 2
@@ -1519,7 +1521,27 @@ const pointsValue = isBoxOrDsq
                       borderBottom: "1px solid rgba(255,255,255,0.08)",
                     }}
                   >
-                    {String(r.gara).trim() === "-" ? (
+                    {exporting && roundFinalMode ? (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          minWidth: exporting ? 42 : 34,
+                          height: exporting ? 28 : 24,
+                          padding: exporting ? "0 12px" : "0 8px",
+                          borderRadius: 999,
+                          background: "rgba(255,215,0,0.16)",
+                          border: "1px solid rgba(255,215,0,0.32)",
+                          boxShadow: "0 0 10px rgba(255,215,0,0.12)",
+                          color: "#fff8dc",
+                          fontWeight: 900,
+                          lineHeight: 1,
+                        }}
+                      >
+                        R1
+                      </span>
+                    ) : String(r.gara).trim() === "-" ? (
                       <span
                         style={{
                           display: "inline-flex",
@@ -1543,8 +1565,7 @@ const pointsValue = isBoxOrDsq
                       r.gara || "-"
                     )}
                   </TableCell>
-
-                  <TableCell exporting={exporting} align="center" mono dim={!r.lobby}>
+                                    <TableCell exporting={exporting} align="center" mono dim={!r.lobby}>
                     {r.lobby || "-"}
                   </TableCell>
 
@@ -1571,7 +1592,42 @@ const pointsValue = isBoxOrDsq
                       fontWeight: 900,
                     }}
                   >
-                    {isPodium ? (
+                    {exporting && roundFinalMode ? (
+                      r.posizione <= 7 ? (
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: exporting ? "8px 14px" : "6px 12px",
+                            borderRadius: 999,
+                            background: "rgba(34,197,94,0.20)",
+                            border: "1px solid rgba(34,197,94,0.42)",
+                            boxShadow: "0 0 16px rgba(34,197,94,0.16)",
+                            color: "#dcfce7",
+                            fontWeight: 900,
+                            fontSize: exporting ? 13 : 11,
+                            letterSpacing: 0.4,
+                            textTransform: "uppercase",
+                          }}
+                          title="Qualificato alle Superfinals"
+                        >
+                          Qualificato
+                        </span>
+                      ) : (
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            minWidth: 28,
+                            opacity: 0.7,
+                          }}
+                        >
+                          -
+                        </span>
+                      )
+                    ) : isPodium ? (
                       <span
                         style={{
                           position: "relative",
@@ -1611,9 +1667,9 @@ const pointsValue = isBoxOrDsq
                               position: "absolute",
                               top: exporting ? -6 : -5,
                               right:
-  isPp && isGv
-    ? (exporting ? -14 : -12)
-    : (exporting ? -9 : -7),
+                                isPp && isGv
+                                  ? (exporting ? -14 : -12)
+                                  : (exporting ? -9 : -7),
                               display: "flex",
                               gap: 1,
                               fontSize: exporting ? 10 : 9,
@@ -1688,9 +1744,9 @@ const pointsValue = isBoxOrDsq
                               position: "absolute",
                               top: exporting ? -6 : -5,
                               right:
-  isPp && isGv
-    ? (exporting ? -14 : -12)
-    : (exporting ? -9 : -7),
+                                isPp && isGv
+                                  ? (exporting ? -14 : -12)
+                                  : (exporting ? -9 : -7),
                               display: "flex",
                               gap: 1,
                               fontSize: exporting ? 10 : 9,
@@ -1821,6 +1877,7 @@ function SplashScreen() {
     </div>
   )
 }
+
 export default function Page() {
   const [files, setFiles] = useState<File[]>([])
   const [csv, setCsv] = useState("")
@@ -1844,6 +1901,7 @@ export default function Page() {
   const [exportTexts, setExportTexts] = useState<ExportTexts>(DEFAULT_EXPORT_TEXTS)
   const [exportTextsDraft, setExportTextsDraft] = useState<ExportTexts>(DEFAULT_EXPORT_TEXTS)
   const [workspaceKey, setWorkspaceKey] = useState(0)
+  const [isRoundFinal, setIsRoundFinal] = useState(false)
 
   const [detectedPoleDriver, setDetectedPoleDriver] = useState("")
   const [detectedBestLapDriver, setDetectedBestLapDriver] = useState("")
@@ -2112,126 +2170,126 @@ export default function Page() {
     const newLeaderMs = comparable[0]?.totalMs ?? null
 
     const comparableRows: DGRowComputed[] = comparable.map((item, idx) => {
-  const isLeader = idx === 0
-  const updatedDistacco =
-    newLeaderMs == null
-      ? item.row.distacchi
-      : isLeader
-        ? formatRaceTimeFromMs(item.totalMs)
-        : formatGapFromLeaderMs(item.totalMs - newLeaderMs)
+      const isLeader = idx === 0
+      const updatedDistacco =
+        newLeaderMs == null
+          ? item.row.distacchi
+          : isLeader
+            ? formatRaceTimeFromMs(item.totalMs)
+            : formatGapFromLeaderMs(item.totalMs - newLeaderMs)
 
-  return {
-    ...item.row,
-    posizione: idx + 1,
-    distacchi: updatedDistacco,
-    dgKind: item.dgKind,
-    dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
-    dgLabel:
-      item.dgKind === "P" || item.dgKind === "S"
-        ? formatDGLabel(item.dgSeconds, item.dgKind)
-        : item.dgKind === "DSQ"
-          ? "DSQ"
-          : "",
-    computedRaceMs: item.totalMs,
-    computedNonComparable: false,
-    computedDsq: false,
-    originalWasLapped: isDoppiatoValue(item.row.distacchi),
-  }
-})
+      return {
+        ...item.row,
+        posizione: idx + 1,
+        distacchi: updatedDistacco,
+        dgKind: item.dgKind,
+        dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
+        dgLabel:
+          item.dgKind === "P" || item.dgKind === "S"
+            ? formatDGLabel(item.dgSeconds, item.dgKind)
+            : item.dgKind === "DSQ"
+              ? "DSQ"
+              : "",
+        computedRaceMs: item.totalMs,
+        computedNonComparable: false,
+        computedDsq: false,
+        originalWasLapped: isDoppiatoValue(item.row.distacchi),
+      }
+    })
 
     const nonComparableRows: DGRowComputed[] = nonComparable
-  .sort((a, b) => a.originalIndex - b.originalIndex)
-  .map((item, idx) => ({
-    ...item.row,
-    posizione: comparableRows.length + idx + 1,
-    dgKind: item.dgKind,
-    dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
-    dgLabel:
-      item.dgKind === "P" || item.dgKind === "S"
-        ? formatDGLabel(item.dgSeconds, item.dgKind)
-        : item.dgKind === "DSQ"
-          ? "DSQ"
-          : "",
-    computedRaceMs: null,
-    computedNonComparable: true,
-    computedDsq: false,
-    originalWasLapped: isDoppiatoValue(item.row.distacchi),
-  }))
+      .sort((a, b) => a.originalIndex - b.originalIndex)
+      .map((item, idx) => ({
+        ...item.row,
+        posizione: comparableRows.length + idx + 1,
+        dgKind: item.dgKind,
+        dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
+        dgLabel:
+          item.dgKind === "P" || item.dgKind === "S"
+            ? formatDGLabel(item.dgSeconds, item.dgKind)
+            : item.dgKind === "DSQ"
+              ? "DSQ"
+              : "",
+        computedRaceMs: null,
+        computedNonComparable: true,
+        computedDsq: false,
+        originalWasLapped: isDoppiatoValue(item.row.distacchi),
+      }))
 
-const dsqComputedRows: DGRowComputed[] = dsqRows
-  .sort((a, b) => a.originalIndex - b.originalIndex)
-  .map((item, idx) => ({
-    ...item.row,
-    posizione: comparableRows.length + nonComparableRows.length + idx + 1,
-    distacchi: "DSQ",
-    dgKind: "DSQ",
-    dgSeconds: 0,
-    dgLabel: "DSQ",
-    computedRaceMs: null,
-    computedNonComparable: false,
-    computedDsq: true,
-    originalWasLapped: isDoppiatoValue(item.row.distacchi),
-  }))
+    const dsqComputedRows: DGRowComputed[] = dsqRows
+      .sort((a, b) => a.originalIndex - b.originalIndex)
+      .map((item, idx) => ({
+        ...item.row,
+        posizione: comparableRows.length + nonComparableRows.length + idx + 1,
+        distacchi: "DSQ",
+        dgKind: "DSQ",
+        dgSeconds: 0,
+        dgLabel: "DSQ",
+        computedRaceMs: null,
+        computedNonComparable: false,
+        computedDsq: true,
+        originalWasLapped: isDoppiatoValue(item.row.distacchi),
+      }))
 
     return [...comparableRows, ...nonComparableRows, ...dsqComputedRows]
   }, [displayRows, dgKinds, dgSeconds, dgLapOverrides])
 
   const finalCsv = useMemo(() => {
-  if (!finalRows.length) return ""
+    if (!finalRows.length) return ""
 
-  const header = "#,Nome pilota,Auto,Distacchi,-PP-,-GV-,Gara,Lobby,Lega"
+    const header = "#,Nome pilota,Auto,Distacchi,-PP-,-GV-,Gara,Lobby,Lega"
 
-  let dnfCount = 0
-  let boxCount = 0
-  let previousGapMs = 0
+    let dnfCount = 0
+    let boxCount = 0
+    let previousGapMs = 0
 
-  const body = finalRows.map((r, index) => {
-    const rawDistacco = String(r.distacchi || "").trim().toUpperCase()
-    let csvDistacco = String(r.distacchi || "").trim()
+    const body = finalRows.map((r, index) => {
+      const rawDistacco = String(r.distacchi || "").trim().toUpperCase()
+      let csvDistacco = String(r.distacchi || "").trim()
 
-    if (index === 0) {
-      previousGapMs = 0
-    } else if (rawDistacco.startsWith("+")) {
-      const parsedGap = parseGapToLeaderMs(rawDistacco)
-      if (parsedGap != null) {
-        previousGapMs = parsedGap
+      if (index === 0) {
+        previousGapMs = 0
+      } else if (rawDistacco.startsWith("+")) {
+        const parsedGap = parseGapToLeaderMs(rawDistacco)
+        if (parsedGap != null) {
+          previousGapMs = parsedGap
+        }
+        csvDistacco = String(r.distacchi || "").trim()
+      } else if (isDoppiatoValue(rawDistacco)) {
+        previousGapMs += 10000
+        csvDistacco = formatGapFromLeaderMs(previousGapMs)
+      } else if (rawDistacco === "DNF") {
+        csvDistacco = formatRaceTimeFromMs(3600000 + dnfCount * 60000)
+        dnfCount++
+      } else if (rawDistacco === "BOX") {
+        csvDistacco = formatRaceTimeFromMs(7200000 + boxCount * 60000)
+        boxCount++
+      } else if (rawDistacco === "DSQ") {
+        csvDistacco = "DSQ"
+      } else {
+        csvDistacco = String(r.distacchi || "").trim()
       }
-      csvDistacco = String(r.distacchi || "").trim()
-    } else if (isDoppiatoValue(rawDistacco)) {
-      previousGapMs += 10000
-      csvDistacco = formatGapFromLeaderMs(previousGapMs)
-    } else if (rawDistacco === "DNF") {
-      csvDistacco = formatRaceTimeFromMs(3600000 + dnfCount * 60000)
-      dnfCount++
-    } else if (rawDistacco === "BOX") {
-      csvDistacco = formatRaceTimeFromMs(7200000 + boxCount * 60000)
-      boxCount++
-    } else if (rawDistacco === "DSQ") {
-      csvDistacco = "DSQ"
-    } else {
-      csvDistacco = String(r.distacchi || "").trim()
-    }
 
-    return [
-      r.posizione,
-      r.nomePilota,
-      r.auto,
-      csvDistacco,
-      r.pp,
-      r.gv,
-      r.gara,
-      r.lobby,
-      r.lega,
-    ]
-      .map((value) => {
-        const s = String(value ?? "").replace(/"/g, '""')
-        return s.includes(",") ? `"${s}"` : s
-      })
-      .join(",")
-  })
+      return [
+        r.posizione,
+        r.nomePilota,
+        r.auto,
+        csvDistacco,
+        r.pp,
+        r.gv,
+        r.gara,
+        r.lobby,
+        r.lega,
+      ]
+        .map((value) => {
+          const s = String(value ?? "").replace(/"/g, '""')
+          return s.includes(",") ? `"${s}"` : s
+        })
+        .join(",")
+    })
 
-  return [header, ...body].join("\n")
-}, [finalRows])
+    return [header, ...body].join("\n")
+  }, [finalRows])
 
   function openAutoCorrectionModal() {
     const nextDraft: Record<number, string> = {}
@@ -2298,6 +2356,7 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
     setShowTable(true)
     setShowReq(false)
     setShowExportModal(false)
+    setIsRoundFinal(false)
     setInputPassword("")
     setLoginError("")
     setExportTexts(DEFAULT_EXPORT_TEXTS)
@@ -2309,7 +2368,6 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
 
     setWorkspaceKey((k) => k + 1)
   }
-
   async function performExportTablePng() {
     if (!exportRef.current || finalRows.length === 0) return
 
@@ -2614,7 +2672,8 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
       </div>
     )
   }
-    return (
+
+  return (
     <div
       key={workspaceKey}
       style={{
@@ -2913,10 +2972,38 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
                 >
                   {exporting ? "Esportazione PNG..." : "Esporta PNG tabella"}
                 </button>
+
+                <label
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "10px 12px",
+                    borderRadius: 14,
+                    border: "1px solid rgba(255,215,0,0.22)",
+                    background: isRoundFinal ? "rgba(255,215,0,0.14)" : "rgba(255,255,255,0.06)",
+                    color: "white",
+                    cursor: "pointer",
+                    fontWeight: 900,
+                    letterSpacing: 0.4,
+                    textTransform: "uppercase",
+                    fontSize: 12,
+                    boxShadow: isRoundFinal ? "0 0 18px rgba(255,215,0,0.10)" : "none",
+                    userSelect: "none",
+                  }}
+                  title="Attiva layout speciale PNG per le finali di round"
+                >
+                  <input
+                    type="checkbox"
+                    checked={isRoundFinal}
+                    onChange={(e) => setIsRoundFinal(e.target.checked)}
+                    style={{ transform: "scale(1.1)" }}
+                  />
+                  Finali di Round
+                </label>
               </div>
             )}
-
-            {warning && (
+                        {warning && (
               <div
                 style={{
                   whiteSpace: "pre-wrap",
@@ -3172,32 +3259,30 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
               </div>
             )}
 
-            {/* TABELLONA RISULTATI SUBITO DOPO ESTRAZIONE */}
-{showTable && finalRows.length > 0 && (
-  <ResultsTable
-  previewRows={finalRows}
-  tableTitle={`Classifica definitiva Union - ${unionMeta.lega ? unionMeta.lega + " " : ""}Lobby ${formatLobbyShort(unionMeta.lobby)} Gara ${effectiveGara || "-"}`}
-/>
-)}
+            {showTable && finalRows.length > 0 && (
+              <ResultsTable
+                previewRows={finalRows}
+                tableTitle={`Classifica definitiva Union - ${unionMeta.lega ? unionMeta.lega + " " : ""}Lobby ${formatLobbyShort(unionMeta.lobby)} Gara ${effectiveGara || "-"}`}
+              />
+            )}
 
-{/* DIREZIONE GARA DOPO LA TABELLA */}
-{displayRows.length > 0 && (
-  <div
-    style={{
-      borderRadius: 16,
-      border: "1px solid rgba(255,255,255,0.10)",
-      background: "rgba(0,0,0,0.18)",
-      padding: 14,
-      display: "grid",
-      gap: 12,
-    }}
-  >
-    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-      <div style={{ fontWeight: 900, opacity: 0.96 }}>Direzione Gara</div>
-      <div style={{ fontSize: 12, opacity: 0.78 }}>
-        P e S modificano entrambi la classifica. DSQ manda il pilota in fondo.
-      </div>
-    </div>
+            {displayRows.length > 0 && (
+              <div
+                style={{
+                  borderRadius: 16,
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  background: "rgba(0,0,0,0.18)",
+                  padding: 14,
+                  display: "grid",
+                  gap: 12,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                  <div style={{ fontWeight: 900, opacity: 0.96 }}>Direzione Gara</div>
+                  <div style={{ fontSize: 12, opacity: 0.78 }}>
+                    P e S modificano entrambi la classifica. DSQ manda il pilota in fondo.
+                  </div>
+                </div>
 
                 <div
                   style={{
@@ -3229,11 +3314,11 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
                           Segnalazioni
                         </th>
                         <th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.82, width: "20%" }}>
-  Gap finale doppiato
-</th>
-<th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.82, width: "6%" }}>
-  X
-</th>
+                          Gap finale doppiato
+                        </th>
+                        <th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.82, width: "6%" }}>
+                          X
+                        </th>
                       </tr>
                     </thead>
 
@@ -3389,83 +3474,83 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
                             </TableCell>
 
                             <TableCell align="center">
-  {isDoppiato ? (
-    <div style={{ display: "grid", gap: 6, justifyItems: "center" }}>
-      <input
-        value={manualGap}
-        onChange={(e) =>
-          setDgLapOverrides((prev) => ({
-            ...prev,
-            [key]: e.target.value,
-          }))
-        }
-        placeholder="1:14.960"
-        style={{
-          width: 120,
-          padding: "8px 10px",
-          borderRadius: 10,
-          border: "1px solid rgba(255,255,255,0.14)",
-          background: "rgba(0,0,0,0.26)",
-          color: "white",
-          textAlign: "center",
-          fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-        }}
-      />
-      <div
-        style={{
-          fontSize: 11,
-          opacity: manualGapValid ? 0.65 : 1,
-          color: manualGapValid ? "rgba(255,255,255,0.65)" : "#ff8a8a",
-        }}
-      >
-        {manualGap.trim()
-          ? manualGapValid
-            ? "Gap valido"
-            : "Usa m:ss.mmm"
-          : "Inserisci gap finale"}
-      </div>
-    </div>
-  ) : (
-    "-"
-  )}
-</TableCell>
+                              {isDoppiato ? (
+                                <div style={{ display: "grid", gap: 6, justifyItems: "center" }}>
+                                  <input
+                                    value={manualGap}
+                                    onChange={(e) =>
+                                      setDgLapOverrides((prev) => ({
+                                        ...prev,
+                                        [key]: e.target.value,
+                                      }))
+                                    }
+                                    placeholder="1:14.960"
+                                    style={{
+                                      width: 120,
+                                      padding: "8px 10px",
+                                      borderRadius: 10,
+                                      border: "1px solid rgba(255,255,255,0.14)",
+                                      background: "rgba(0,0,0,0.26)",
+                                      color: "white",
+                                      textAlign: "center",
+                                      fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                                    }}
+                                  />
+                                  <div
+                                    style={{
+                                      fontSize: 11,
+                                      opacity: manualGapValid ? 0.65 : 1,
+                                      color: manualGapValid ? "rgba(255,255,255,0.65)" : "#ff8a8a",
+                                    }}
+                                  >
+                                    {manualGap.trim()
+                                      ? manualGapValid
+                                        ? "Gap valido"
+                                        : "Usa m:ss.mmm"
+                                      : "Inserisci gap finale"}
+                                  </div>
+                                </div>
+                              ) : (
+                                "-"
+                              )}
+                            </TableCell>
 
-<TableCell align="center">
-  <button
-    onClick={() => {
-      setDgKinds((prev) => {
-        const next = { ...prev }
-        delete next[key]
-        return next
-      })
-      setDgSeconds((prev) => {
-        const next = { ...prev }
-        delete next[key]
-        return next
-      })
-      setDgLapOverrides((prev) => {
-        const next = { ...prev }
-        delete next[key]
-        return next
-      })
-    }}
-    style={{
-      width: 34,
-      height: 34,
-      borderRadius: 10,
-      border: "1px solid rgba(255,255,255,0.14)",
-      background: "rgba(255,255,255,0.06)",
-      color: "white",
-      cursor: "pointer",
-      fontWeight: 900,
-      fontSize: 16,
-      lineHeight: 1,
-    }}
-    title="Reset DG"
-  >
-    ×
-  </button>
-</TableCell>
+                            <TableCell align="center">
+                              <button
+                                onClick={() => {
+                                  setDgKinds((prev) => {
+                                    const next = { ...prev }
+                                    delete next[key]
+                                    return next
+                                  })
+                                  setDgSeconds((prev) => {
+                                    const next = { ...prev }
+                                    delete next[key]
+                                    return next
+                                  })
+                                  setDgLapOverrides((prev) => {
+                                    const next = { ...prev }
+                                    delete next[key]
+                                    return next
+                                  })
+                                }}
+                                style={{
+                                  width: 34,
+                                  height: 34,
+                                  borderRadius: 10,
+                                  border: "1px solid rgba(255,255,255,0.14)",
+                                  background: "rgba(255,255,255,0.06)",
+                                  color: "white",
+                                  cursor: "pointer",
+                                  fontWeight: 900,
+                                  fontSize: 16,
+                                  lineHeight: 1,
+                                }}
+                                title="Reset DG"
+                              >
+                                ×
+                              </button>
+                            </TableCell>
                           </tr>
                         )
                       })}
@@ -3476,22 +3561,22 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
             )}
 
             {error && (
-  <pre
-    style={{
-      whiteSpace: "pre-wrap",
-      color: "#ff6b6b",
-      background: "rgba(0,0,0,0.35)",
-      border: "1px solid rgba(255,255,255,0.10)",
-      padding: 12,
-      borderRadius: 14,
-      overflowX: "auto",
-    }}
-  >
-    {error}
-  </pre>
-)}
+              <pre
+                style={{
+                  whiteSpace: "pre-wrap",
+                  color: "#ff6b6b",
+                  background: "rgba(0,0,0,0.35)",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  padding: 12,
+                  borderRadius: 14,
+                  overflowX: "auto",
+                }}
+              >
+                {error}
+              </pre>
+            )}
 
-{finalCsv && (
+            {finalCsv && (
               <div
                 style={{
                   borderRadius: 16,
@@ -3931,10 +4016,15 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
               />
 
               <ResultsTable
-  previewRows={finalRows}
-  exporting={true}
-  tableTitle={`Classifica definitiva Union - ${unionMeta.lega ? unionMeta.lega + " " : ""}Lobby ${formatLobbyShort(unionMeta.lobby)}${effectiveGara ? ` Gara ${effectiveGara}` : ""}`}
-/>
+                previewRows={finalRows}
+                exporting={true}
+                roundFinalMode={isRoundFinal}
+                tableTitle={
+                  isRoundFinal
+                    ? `Finali di Round – Union Manufacturers Trophy - ${unionMeta.lega ? unionMeta.lega + " " : ""}Lobby ${formatLobbyShort(unionMeta.lobby)}`
+                    : `Classifica definitiva Union - ${unionMeta.lega ? unionMeta.lega + " " : ""}Lobby ${formatLobbyShort(unionMeta.lobby)}${effectiveGara ? ` Gara ${effectiveGara}` : ""}`
+                }
+              />
             </div>
           )}
         </div>
