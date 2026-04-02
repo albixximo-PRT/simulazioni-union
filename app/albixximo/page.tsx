@@ -2414,13 +2414,13 @@ export default function Page() {
   }, [finalRows])
 
   function openPilotCorrectionModal() {
-    const nextDraft: Record<number, string> = {}
-    for (const row of rows) {
-      nextDraft[row.posizione] = (manualPilotOverrides[row.posizione] ?? row.nomePilota ?? "").trim()
-    }
-    setManualPilotDraft(nextDraft)
-    setShowPilotModal(true)
+  const nextDraft: Record<number, string> = {}
+  for (const row of displayRows) {
+    nextDraft[row.posizione] = String(row.nomePilota ?? "").trim()
   }
+  setManualPilotDraft(nextDraft)
+  setShowPilotModal(true)
+}
 
   function applyPilotCorrections() {
   const cleaned: Record<number, string> = {}
@@ -3986,7 +3986,7 @@ export default function Page() {
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map((row) => {
+                    {displayRows.map((row) => {
                       const currentValue = String(manualPilotDraft[row.posizione] ?? "").trim()
                       const originalValue = String(row.nomePilota ?? "").trim()
                       const changed = currentValue !== originalValue
@@ -4051,11 +4051,11 @@ export default function Page() {
 
   const currentPos = row.posizione
 
-  const otherRow = rows.find(
-    (candidate) =>
-      candidate.posizione !== currentPos &&
-      String(candidate.nomePilota ?? "").trim() === selected
-  )
+  const otherRow = displayRows.find(
+  (candidate) =>
+    candidate.posizione !== currentPos &&
+    String(candidate.nomePilota ?? "").trim() === selected
+)
 
   if (!otherRow) {
     e.currentTarget.value = ""
@@ -4091,9 +4091,9 @@ export default function Page() {
         Sostituisci con...
       </option>
 
-      {rows
-        .filter((candidate) => candidate.posizione !== row.posizione)
-        .map((candidate) => (
+      {displayRows
+  .filter((candidate) => candidate.posizione !== row.posizione)
+  .map((candidate) => (
           <option
             key={`pilot-option-${row.posizione}-${candidate.posizione}`}
             value={candidate.nomePilota}
