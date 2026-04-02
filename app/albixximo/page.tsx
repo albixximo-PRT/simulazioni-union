@@ -2437,25 +2437,30 @@ export default function Page() {
     }
   }
 
-  const nextAutoOverrides: Record<number, string> = { ...manualAutoOverrides }
+  const nextAutoOverrides: Record<number, string> = {}
 
   for (const row of rows) {
     const finalPilotName = String(cleaned[row.posizione] ?? row.nomePilota ?? "").trim()
+    const originalAuto = String(row.auto ?? "").trim()
+
+    if (!finalPilotName) {
+      if (originalAuto) {
+        nextAutoOverrides[row.posizione] = ""
+      }
+      continue
+    }
 
     const sourceRow = rows.find((candidate) =>
       sameDriverForMatch(candidate.nomePilota, finalPilotName)
     )
 
-    if (!sourceRow) continue
+    if (!sourceRow) {
+      continue
+    }
 
     const sourceAuto = String(sourceRow.auto ?? "").trim()
-    const originalAuto = String(row.auto ?? "").trim()
 
-    if (!sourceAuto) continue
-
-    if (sourceAuto === originalAuto) {
-      delete nextAutoOverrides[row.posizione]
-    } else {
+    if (sourceAuto !== originalAuto) {
       nextAutoOverrides[row.posizione] = sourceAuto
     }
   }
