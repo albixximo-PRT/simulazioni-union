@@ -1674,7 +1674,7 @@ function ResultsTable({
                             fontWeight: 900,
                             fontSize: exporting ? 13 : 11,
                             letterSpacing: 0.4,
-                            textTransform: "uppercase",
+                            textTransform: "none",
                           }}
                           title="Qualificato alle Superfinals"
                         >
