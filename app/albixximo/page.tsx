@@ -2423,21 +2423,47 @@ export default function Page() {
   }
 
   function applyPilotCorrections() {
-    const cleaned: Record<number, string> = {}
-    for (const row of rows) {
-      const hasDraft = Object.prototype.hasOwnProperty.call(manualPilotDraft, row.posizione)
-      const draftValue = String(manualPilotDraft[row.posizione] ?? "").trim()
-      const originalValue = String(row.nomePilota ?? "").trim()
+  const cleaned: Record<number, string> = {}
 
-      if (!hasDraft) continue
+  for (const row of rows) {
+    const hasDraft = Object.prototype.hasOwnProperty.call(manualPilotDraft, row.posizione)
+    const draftValue = String(manualPilotDraft[row.posizione] ?? "").trim()
+    const originalValue = String(row.nomePilota ?? "").trim()
 
-      if (draftValue !== originalValue) {
-        cleaned[row.posizione] = draftValue
-      }
+    if (!hasDraft) continue
+
+    if (draftValue !== originalValue) {
+      cleaned[row.posizione] = draftValue
     }
-    setManualPilotOverrides(cleaned)
-    setShowPilotModal(false)
   }
+
+  const nextAutoOverrides: Record<number, string> = { ...manualAutoOverrides }
+
+  for (const row of rows) {
+    const finalPilotName = String(cleaned[row.posizione] ?? row.nomePilota ?? "").trim()
+
+    const sourceRow = rows.find((candidate) =>
+      sameDriverForMatch(candidate.nomePilota, finalPilotName)
+    )
+
+    if (!sourceRow) continue
+
+    const sourceAuto = String(sourceRow.auto ?? "").trim()
+    const originalAuto = String(row.auto ?? "").trim()
+
+    if (!sourceAuto) continue
+
+    if (sourceAuto === originalAuto) {
+      delete nextAutoOverrides[row.posizione]
+    } else {
+      nextAutoOverrides[row.posizione] = sourceAuto
+    }
+  }
+
+  setManualPilotOverrides(cleaned)
+  setManualAutoOverrides(nextAutoOverrides)
+  setShowPilotModal(false)
+}
 
   function resetPilotCorrections() {
     setManualPilotOverrides({})
@@ -4033,33 +4059,16 @@ export default function Page() {
 
   const otherPos = otherRow.posizione
 
-  const currentPilot = String(
-    manualPilotDraft[currentPos] ?? row.nomePilota ?? ""
-  ).trim()
+  setManualPilotDraft((prev) => {
+    const currentPilot = String(prev[currentPos] ?? row.nomePilota ?? "").trim()
+    const otherPilot = String(prev[otherPos] ?? otherRow.nomePilota ?? "").trim()
 
-  const otherPilot = String(
-    manualPilotDraft[otherPos] ?? otherRow.nomePilota ?? ""
-  ).trim()
-
-  const currentAuto = String(
-    manualAutoDraft[currentPos] ?? row.auto ?? ""
-  ).trim()
-
-  const otherAuto = String(
-    manualAutoDraft[otherPos] ?? otherRow.auto ?? ""
-  ).trim()
-
-  setManualPilotDraft((prev) => ({
-    ...prev,
-    [currentPos]: otherPilot,
-    [otherPos]: currentPilot,
-  }))
-
-  setManualAutoDraft((prev) => ({
-    ...prev,
-    [currentPos]: otherAuto,
-    [otherPos]: currentAuto,
-  }))
+    return {
+      ...prev,
+      [currentPos]: otherPilot,
+      [otherPos]: currentPilot,
+    }
+  })
 
   e.currentTarget.value = ""
 }}
