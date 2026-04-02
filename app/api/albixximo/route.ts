@@ -44,6 +44,7 @@ async function callOcrSpace(apiKey: string, jpegBuffer: Buffer, engine: "1" | "2
     return fd
   }
 
+  // 🔁 PRO 1 → 2 tentativi
   for (let i = 0; i < 2; i++) {
     try {
       const res = await fetchWithTimeout(
@@ -58,10 +59,11 @@ async function callOcrSpace(apiKey: string, jpegBuffer: Buffer, engine: "1" | "2
         return { res, data }
       }
     } catch {
-      //
+      // retry PRO 1
     }
   }
 
+  // 🔄 PRO 2 → fallback
   try {
     const res = await fetchWithTimeout(
       OCR_PRO_ENDPOINTS[1],
@@ -75,7 +77,7 @@ async function callOcrSpace(apiKey: string, jpegBuffer: Buffer, engine: "1" | "2
       return { res, data }
     }
   } catch {
-    //
+    // fallback fallito
   }
 
   throw new Error("OCR.Space non disponibile o risposta non valida")
@@ -284,6 +286,7 @@ function csvEscape(v: any) {
 /* -------------------- Known cars -------------------- */
 
 const KNOWN_CARS = [
+  // Union storiche / GT3-like
   "911 GT3 R (992) '22",
   "R8 LMS Evo '19",
   "M6 GT3 Sprint Model '16",
@@ -310,6 +313,7 @@ const KNOWN_CARS = [
   "TS050 Hybrid '16",
   "GR010 HYBRID '21",
 
+  // PRT aggiunte
   "Cayman GT4 Clubsport '16",
   "Mégane Trophy '11",
   "Swift Sport Gr.4",
@@ -921,38 +925,6 @@ function takeBlock(lines: string[], headerIdx: number, stopRe: RegExp, n: number
   return out
 }
 
-function normalizeRaceTempoCell(raw: string) {
-  const original = String(raw || "").trim()
-  if (!original) return ""
-
-  let s = original
-    .replace(/\s+/g, " ")
-    .replace(/[|]/g, "")
-    .trim()
-
-  const plusGap = s.match(/^\+\s*(\d+(?::\d{2})?\.\d{3})$/)
-  if (plusGap) return `+${plusGap[1]}`
-
-  const totalTime = s.match(/^(?:\d+:)?\d{1,2}:\d{2}\.\d{3}$/)
-  if (totalTime) return totalTime[0]
-
-  if (/in\s+gara/i.test(s)) return "BOX"
-  if (/non\s+finito/i.test(s)) return "DNF"
-
-  const compact = s
-    .toLowerCase()
-    .replace(/\s+/g, "")
-    .replace(/[^a-z0-9:+.\-]/g, "")
-
-  const giroLike = compact.match(/^(\d+)(?:giro|giri|gir0|g1ro|giro0|g|gi|gir)$/i)
-  if (giroLike) return `${giroLike[1]}giro`
-
-  const spacedGiroLike = s.match(/^(\d+)\s*g(?:i|1|l)?r[o0]s?$/i)
-  if (spacedGiroLike) return `${spacedGiroLike[1]}giro`
-
-  return original
-}
-
 function parseGaraFromColumnText(rawText: string): RaceRow[] {
   const lines = rawText
     .split(/\r?\n/)
@@ -1188,34 +1160,26 @@ function parseGaraFromColumnText(rawText: string): RaceRow[] {
       }
     }
 
-    const tempoCellRaw = (tempoRaw[i] ?? "").trim()
-    const tempoCell = normalizeRaceTempoCell(tempoCellRaw)
+    const tempoCell = (tempoRaw[i] ?? "").trim()
 
     let tempoTotale = ""
     let distacco = ""
 
     if (pos === 1) {
-      if (/^(?:\d+:)?\d{1,2}:\d{2}\.\d{3}$/.test(tempoCell)) {
-        tempoTotale = tempoCell
-      }
-      distacco = ""
-    } else {
-      if (/^\+\d+(?::\d{2})?\.\d{3}$/.test(tempoCell)) {
-        distacco = tempoCell
-      } else if (tempoCell === "BOX") {
-        distacco = "BOX"
-      } else if (/^\d+giro$/i.test(tempoCell)) {
-        distacco = tempoCell
-      } else if (tempoCell === "DNF") {
-        distacco = "DNF"
-      } else {
-        distacco = ""
-
-        if (/g[i1l]r[o0]/i.test(tempoCellRaw)) {
-          distacco = "1giro"
-        }
-      }
-    }
+  if (/^(?:\d+:)?\d{1,2}:\d{2}\.\d{3}$/.test(tempoCell)) tempoTotale = tempoCell
+  distacco = ""
+} else {
+  if (tempoCell.startsWith("+")) {
+    distacco = tempoCell.replace(/\+\s*/g, "+").trim()
+  } else if (/in\s+gara/i.test(tempoCell)) {
+    distacco = "BOX"
+  } else {
+    const giroMatch = tempoCell.match(/^(\d+)\s*giro/i) || tempoCell.match(/^(\d+)\s*giri/i)
+    if (giroMatch) distacco = `${giroMatch[1]}giro`
+    else if (/non\s+finito/i.test(tempoCell)) distacco = "DNF"
+    else distacco = tempoCell
+  }
+}
 
     out.push({
       pos,
