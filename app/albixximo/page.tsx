@@ -329,6 +329,26 @@ function parseManualGapMs(value: string): number | null {
   return (mm * 60 + ss) * 1000 + ms
 }
 
+function getComparableRaceMsForOrdering(
+  row: Pick<UnionRow, "distacchi">,
+  leaderMs: number | null
+): number | null {
+  const rawDistacco = String(row.distacchi || "").trim()
+
+  if (!rawDistacco) return null
+  if (isNonComparableUnionValue(rawDistacco)) return null
+
+  const absoluteMs = parseLeaderRaceTimeMs(rawDistacco)
+  if (absoluteMs != null) return absoluteMs
+
+  if (leaderMs != null) {
+    const gapMs = parseGapToLeaderMs(rawDistacco)
+    if (gapMs != null) return leaderMs + gapMs
+  }
+
+  return null
+}
+
 function formatRaceTimeFromMs(totalMs: number): string {
   const safe = Math.max(0, Math.round(totalMs))
   const hours = Math.floor(safe / 3600000)
@@ -2124,9 +2144,34 @@ export default function Page() {
   const finalRows = useMemo<DGRowComputed[]>(() => {
     if (displayRows.length === 0) return []
 
-    const ordered = [...displayRows].sort((a, b) => a.posizione - b.posizione)
+    const useEditedOrderingForDg = shouldSyncDgTableWithManualEdits
 
-    const leaderRow = ordered.find((r) => r.posizione === 1) || ordered[0]
+    const detectedLeaderRow =
+      displayRows.find((r) => parseLeaderRaceTimeMs(r.distacchi) != null) ||
+      displayRows.find((r) => r.posizione === 1) ||
+      displayRows[0]
+
+    const detectedLeaderMs = parseLeaderRaceTimeMs(detectedLeaderRow?.distacchi || "")
+
+    const ordered = useEditedOrderingForDg
+      ? [...displayRows].sort((a, b) => {
+          const aMs = getComparableRaceMsForOrdering(a, detectedLeaderMs)
+          const bMs = getComparableRaceMsForOrdering(b, detectedLeaderMs)
+
+          if (aMs != null && bMs != null) {
+            if (aMs !== bMs) return aMs - bMs
+            return a.posizione - b.posizione
+          }
+
+          if (aMs != null && bMs == null) return -1
+          if (aMs == null && bMs != null) return 1
+
+          return a.posizione - b.posizione
+        })
+      : [...displayRows].sort((a, b) => a.posizione - b.posizione)
+
+    const leaderRow =
+      ordered.find((r) => parseLeaderRaceTimeMs(r.distacchi) != null) || ordered[0]
     const leaderMs = parseLeaderRaceTimeMs(leaderRow?.distacchi || "")
 
     const comparable: Array<{
