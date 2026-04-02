@@ -2390,8 +2390,8 @@ export default function Page() {
 
   function openDistaccoCorrectionModal() {
     const nextDraft: Record<number, string> = {}
-    for (const row of rows) {
-      nextDraft[row.posizione] = (manualDistaccoOverrides[row.posizione] ?? row.distacchi ?? "").trim()
+    for (const row of displayRows) {
+      nextDraft[row.posizione] = String(row.distacchi ?? "").trim()
     }
     setManualDistaccoDraft(nextDraft)
     setShowDistaccoModal(true)
@@ -4117,7 +4117,7 @@ export default function Page() {
                     </tr>
                   </thead>
                   <tbody>
-                    {rows.map((row) => {
+                    {displayRows.map((row) => {
                       const currentValue = String(manualDistaccoDraft[row.posizione] ?? "").trim()
                       const originalValue = String(row.distacchi ?? "").trim()
                       const changed = currentValue !== originalValue
