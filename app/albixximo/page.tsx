@@ -4018,22 +4018,48 @@ export default function Page() {
   const selected = e.target.value
   if (!selected) return
 
-  setManualPilotDraft((prev) => {
-    const next = { ...prev }
+  const currentPos = row.posizione
 
-    const otherRow = rows.find(
-      (candidate) =>
-        candidate.posizione !== row.posizione &&
-        String(next[candidate.posizione] ?? candidate.nomePilota ?? "").trim() === selected
-    )
+  const otherRow = rows.find(
+    (candidate) =>
+      candidate.posizione !== currentPos &&
+      String(candidate.nomePilota ?? "").trim() === selected
+  )
 
-    if (otherRow) {
-      next[otherRow.posizione] = ""
-    }
+  if (!otherRow) {
+    e.currentTarget.value = ""
+    return
+  }
 
-    next[row.posizione] = selected
-    return next
-  })
+  const otherPos = otherRow.posizione
+
+  const currentPilot = String(
+    manualPilotDraft[currentPos] ?? row.nomePilota ?? ""
+  ).trim()
+
+  const otherPilot = String(
+    manualPilotDraft[otherPos] ?? otherRow.nomePilota ?? ""
+  ).trim()
+
+  const currentAuto = String(
+    manualAutoDraft[currentPos] ?? row.auto ?? ""
+  ).trim()
+
+  const otherAuto = String(
+    manualAutoDraft[otherPos] ?? otherRow.auto ?? ""
+  ).trim()
+
+  setManualPilotDraft((prev) => ({
+    ...prev,
+    [currentPos]: otherPilot,
+    [otherPos]: currentPilot,
+  }))
+
+  setManualAutoDraft((prev) => ({
+    ...prev,
+    [currentPos]: otherAuto,
+    [otherPos]: currentAuto,
+  }))
 
   e.currentTarget.value = ""
 }}
