@@ -796,14 +796,21 @@ function Pill({
         alignItems: "center",
         gap: exporting ? 12 : 10,
         padding:
-          left === "DOPPIATO"
-            ? exporting
+          exporting
+            ? left === "DOPPIATO"
               ? "6px 14px"
-              : "5px 10px"
-            : exporting
-              ? "10px 16px"
+              : left === "PP" || left === "GV"
+                ? "7px 14px"
+                : "10px 16px"
+            : left === "DOPPIATO"
+              ? "5px 10px"
               : "8px 12px",
-        borderRadius: left === "DOPPIATO" ? 12 : 14,
+        borderRadius:
+          left === "DOPPIATO"
+            ? 12
+            : left === "PP" || left === "GV"
+              ? 13
+              : 14,
         fontSize: exporting ? 14 : 12,
         fontWeight: 900,
         letterSpacing: 0.6,
