@@ -19,6 +19,10 @@ type UnionRow = {
   lega: string
 }
 
+type DisplayRow = UnionRow & {
+  sourcePosizione: number
+}
+
 type UnionMeta = {
   gara: string
   lobby: string
@@ -53,6 +57,7 @@ type MatchSummary = {
 type DGKind = "-" | "P" | "S" | "DSQ"
 
 type DGRowComputed = UnionRow & {
+  sourcePosizione: number
   dgKind?: DGKind
   dgSeconds?: number
   dgLabel?: string
@@ -2074,9 +2079,10 @@ export default function Page() {
     return String(manualGaraOverride || detectedGaraDisplay || "").trim()
   }, [manualGaraOverride, detectedGaraDisplay])
 
-  const displayRows = useMemo(() => {
+  const displayRows = useMemo<DisplayRow[]>(() => {
     return rows.map((r) => ({
       ...r,
+      sourcePosizione: r.posizione,
       nomePilota: (manualPilotOverrides[r.posizione] ?? r.nomePilota ?? "").trim(),
       auto: (manualAutoOverrides[r.posizione] ?? r.auto ?? "").trim(),
       distacchi: (manualDistaccoOverrides[r.posizione] ?? r.distacchi ?? "").trim(),
@@ -2103,6 +2109,18 @@ export default function Page() {
     return Object.keys(manualAutoOverrides).length > 0
   }, [manualAutoOverrides])
 
+  const hasManualPilotOverrides = useMemo(() => {
+    return Object.keys(manualPilotOverrides).length > 0
+  }, [manualPilotOverrides])
+
+  const hasManualDistaccoOverrides = useMemo(() => {
+    return Object.keys(manualDistaccoOverrides).length > 0
+  }, [manualDistaccoOverrides])
+
+  const shouldSyncDgTableWithManualEdits = useMemo(() => {
+    return hasManualPilotOverrides || hasManualDistaccoOverrides
+  }, [hasManualPilotOverrides, hasManualDistaccoOverrides])
+
   const finalRows = useMemo<DGRowComputed[]>(() => {
     if (displayRows.length === 0) return []
 
@@ -2113,7 +2131,7 @@ export default function Page() {
 
     const comparable: Array<{
       originalIndex: number
-      row: UnionRow
+      row: DisplayRow
       totalMs: number
       dgKind: DGKind
       dgSeconds: number
@@ -2121,14 +2139,14 @@ export default function Page() {
 
     const nonComparable: Array<{
       originalIndex: number
-      row: UnionRow
+      row: DisplayRow
       dgKind: DGKind
       dgSeconds: number
     }> = []
 
     const dsqRows: Array<{
       originalIndex: number
-      row: UnionRow
+      row: DisplayRow
       dgKind: DGKind
     }> = []
 
@@ -2271,6 +2289,14 @@ export default function Page() {
     return [...comparableRows, ...nonComparableRows, ...dsqComputedRows]
   }, [displayRows, dgKinds, dgSeconds, dgLapOverrides])
 
+  const dgTableRows = useMemo<(DisplayRow | DGRowComputed)[]>(() => {
+    if (!shouldSyncDgTableWithManualEdits) {
+      return displayRows
+    }
+
+    return finalRows
+  }, [shouldSyncDgTableWithManualEdits, displayRows, finalRows])
+  
   const finalCsv = useMemo(() => {
     if (!finalRows.length) return ""
 
@@ -3484,8 +3510,8 @@ export default function Page() {
                     </thead>
 
                     <tbody>
-                      {displayRows.map((row, idx) => {
-                        const key = getRowStableKey(row.posizione)
+                      {dgTableRows.map((row, idx) => {
+                        const key = getRowStableKey(row.sourcePosizione ?? row.posizione)
                         const selectedKind = dgKinds[key] || "-"
                         const selectedSeconds = dgSeconds[key] || "-"
                         const isDoppiato = isDoppiatoValue(row.distacchi)
@@ -3494,7 +3520,7 @@ export default function Page() {
 
                         return (
                           <tr
-                            key={`dg-${row.posizione}-${row.nomePilota}-${idx}`}
+                            key={`dg-${row.sourcePosizione ?? row.posizione}-${row.nomePilota}-${idx}`}
                             style={{
                               background: idx % 2 === 0 ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.10)",
                             }}
