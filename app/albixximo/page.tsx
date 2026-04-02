@@ -2422,46 +2422,39 @@ export default function Page() {
   setShowPilotModal(true)
 }
 
-  function applyPilotCorrections() {
+function applyPilotCorrections() {
   const cleaned: Record<number, string> = {}
 
   for (const row of rows) {
-    const hasDraft = Object.prototype.hasOwnProperty.call(manualPilotDraft, row.posizione)
     const draftValue = String(manualPilotDraft[row.posizione] ?? "").trim()
     const originalValue = String(row.nomePilota ?? "").trim()
 
-    if (!hasDraft) continue
-
-    if (draftValue !== originalValue) {
+    if (draftValue && draftValue !== originalValue) {
       cleaned[row.posizione] = draftValue
     }
   }
 
   const nextAutoOverrides: Record<number, string> = {}
 
-  for (const row of rows) {
-    const finalPilotName = String(cleaned[row.posizione] ?? row.nomePilota ?? "").trim()
-    const originalAuto = String(row.auto ?? "").trim()
+  for (const baseRow of rows) {
+    const finalPilotName = String(
+      cleaned[baseRow.posizione] ?? baseRow.nomePilota ?? ""
+    ).trim()
 
-    if (!finalPilotName) {
-      if (originalAuto) {
-        nextAutoOverrides[row.posizione] = ""
-      }
-      continue
-    }
+    const originalAuto = String(baseRow.auto ?? "").trim()
+
+    if (!finalPilotName) continue
 
     const sourceRow = rows.find((candidate) =>
       sameDriverForMatch(candidate.nomePilota, finalPilotName)
     )
 
-    if (!sourceRow) {
-      continue
-    }
+    if (!sourceRow) continue
 
     const sourceAuto = String(sourceRow.auto ?? "").trim()
 
     if (sourceAuto !== originalAuto) {
-      nextAutoOverrides[row.posizione] = sourceAuto
+      nextAutoOverrides[baseRow.posizione] = sourceAuto
     }
   }
 
@@ -2471,10 +2464,12 @@ export default function Page() {
 }
 
   function resetPilotCorrections() {
-    setManualPilotOverrides({})
-    setManualPilotDraft({})
-    setShowPilotModal(false)
-  }
+  setManualPilotOverrides({})
+  setManualPilotDraft({})
+  setManualAutoOverrides({})
+  setManualAutoDraft({})
+  setShowPilotModal(false)
+}
 
   function openAutoCorrectionModal() {
     const nextDraft: Record<number, string> = {}
@@ -3971,20 +3966,23 @@ export default function Page() {
                   }}
                 >
                   <thead
-                    style={{
-                      position: "sticky",
-                      top: 0,
-                      zIndex: 2,
-                      background: "rgba(10,12,18,0.96)",
-                      backdropFilter: "blur(10px)",
-                    }}
-                  >
-                    <tr>
-                      <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 70 }}>#</th>
-                      <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 320 }}>Pilota OCR</th>
-                      <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8 }}>Pilota corretto</th>
-                    </tr>
-                  </thead>
+  style={{
+    position: "sticky",
+    top: 0,
+    zIndex: 2,
+    background: "rgba(10,12,18,0.96)",
+    backdropFilter: "blur(10px)",
+  }}
+>
+  <tr>
+    <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 320 }}>
+      Pilota OCR
+    </th>
+    <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8 }}>
+      Pilota corretto
+    </th>
+  </tr>
+</thead>
                   <tbody>
                     {displayRows.map((row) => {
                       const currentValue = String(manualPilotDraft[row.posizione] ?? "").trim()
@@ -4000,9 +3998,7 @@ export default function Page() {
                               : "transparent",
                           }}
                         >
-                          <td style={{ padding: "12px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                            <PosBadge pos={row.posizione} />
-                          </td>
+                    
 
                           <td
                             style={{
@@ -4030,6 +4026,7 @@ export default function Page() {
           [row.posizione]: e.target.value,
         }))
       }
+      placeholder="Correggi nome pilota"
       style={{
         width: "100%",
         padding: "10px 12px",
@@ -4046,37 +4043,43 @@ export default function Page() {
     <select
       defaultValue=""
       onChange={(e) => {
-  const selected = e.target.value
-  if (!selected) return
+        const selected = e.target.value
+        if (!selected) return
 
-  const currentPos = row.posizione
+        const currentPos = row.posizione
 
-  const otherRow = displayRows.find(
-  (candidate) =>
-    candidate.posizione !== currentPos &&
-    String(candidate.nomePilota ?? "").trim() === selected
-)
+        const otherRow = displayRows.find(
+          (candidate) =>
+            candidate.posizione !== currentPos &&
+            String(candidate.nomePilota ?? "").trim() === selected
+        )
 
-  if (!otherRow) {
-    e.currentTarget.value = ""
-    return
-  }
+        if (!otherRow) {
+          e.currentTarget.value = ""
+          return
+        }
 
-  const otherPos = otherRow.posizione
+        const otherPos = otherRow.posizione
 
-  setManualPilotDraft((prev) => {
-    const currentPilot = String(prev[currentPos] ?? row.nomePilota ?? "").trim()
-    const otherPilot = String(prev[otherPos] ?? otherRow.nomePilota ?? "").trim()
+        setManualPilotDraft((prev) => {
+          const next = { ...prev }
 
-    return {
-      ...prev,
-      [currentPos]: otherPilot,
-      [otherPos]: currentPilot,
-    }
-  })
+          const currentPilot = String(
+            next[currentPos] ?? row.nomePilota ?? ""
+          ).trim()
 
-  e.currentTarget.value = ""
-}}
+          const otherPilot = String(
+            next[otherPos] ?? otherRow.nomePilota ?? ""
+          ).trim()
+
+          next[currentPos] = otherPilot
+          next[otherPos] = currentPilot
+
+          return next
+        })
+
+        e.currentTarget.value = ""
+      }}
       style={{
         width: "100%",
         padding: "10px 12px",
@@ -4088,12 +4091,12 @@ export default function Page() {
       }}
     >
       <option value="" style={{ background: "#11151d", color: "white" }}>
-        Sostituisci con...
+        Scambia con...
       </option>
 
       {displayRows
-  .filter((candidate) => candidate.posizione !== row.posizione)
-  .map((candidate) => (
+        .filter((candidate) => candidate.posizione !== row.posizione)
+        .map((candidate) => (
           <option
             key={`pilot-option-${row.posizione}-${candidate.posizione}`}
             value={candidate.nomePilota}
@@ -4114,58 +4117,58 @@ export default function Page() {
             </div>
 
             <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, flexWrap: "wrap" }}>
-              <button
-                onClick={() => setShowPilotModal(false)}
-                style={{
-                  padding: "12px 16px",
-                  borderRadius: 14,
-                  border: "1px solid rgba(255,255,255,0.14)",
-                  background: "rgba(255,255,255,0.06)",
-                  color: "white",
-                  cursor: "pointer",
-                  fontWeight: 900,
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                }}
-              >
-                Chiudi
-              </button>
+  <button
+    onClick={() => setShowPilotModal(false)}
+    style={{
+      padding: "12px 16px",
+      borderRadius: 14,
+      border: "1px solid rgba(255,255,255,0.14)",
+      background: "rgba(255,255,255,0.06)",
+      color: "white",
+      cursor: "pointer",
+      fontWeight: 900,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    }}
+  >
+    Chiudi
+  </button>
 
-              <button
-                onClick={resetPilotCorrections}
-                style={{
-                  padding: "12px 16px",
-                  borderRadius: 14,
-                  border: "1px solid rgba(255,255,255,0.14)",
-                  background: "rgba(255,255,255,0.06)",
-                  color: "white",
-                  cursor: "pointer",
-                  fontWeight: 900,
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                }}
-              >
-                Reset
-              </button>
+  <button
+    onClick={resetPilotCorrections}
+    style={{
+      padding: "12px 16px",
+      borderRadius: 14,
+      border: "1px solid rgba(255,255,255,0.14)",
+      background: "rgba(255,255,255,0.06)",
+      color: "white",
+      cursor: "pointer",
+      fontWeight: 900,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    }}
+  >
+    Reset
+  </button>
 
-              <button
-                onClick={applyPilotCorrections}
-                style={{
-                  padding: "12px 16px",
-                  borderRadius: 14,
-                  border: "1px solid rgba(160,90,255,0.30)",
-                  background: "rgba(160,90,255,0.20)",
-                  color: "white",
-                  cursor: "pointer",
-                  fontWeight: 900,
-                  textTransform: "uppercase",
-                  letterSpacing: 0.5,
-                  boxShadow: "0 0 22px rgba(160,90,255,0.12)",
-                }}
-              >
-                Applica correzioni
-              </button>
-            </div>
+  <button
+    onClick={applyPilotCorrections}
+    style={{
+      padding: "12px 16px",
+      borderRadius: 14,
+      border: "1px solid rgba(160,90,255,0.30)",
+      background: "rgba(160,90,255,0.20)",
+      color: "white",
+      cursor: "pointer",
+      fontWeight: 900,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+      boxShadow: "0 0 22px rgba(160,90,255,0.12)",
+    }}
+  >
+    Applica correzioni
+  </button>
+</div>
           </div>
         </div>
       )}
