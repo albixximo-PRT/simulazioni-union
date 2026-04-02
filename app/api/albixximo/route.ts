@@ -261,9 +261,11 @@ function betterPilotMatch(a: string, b: string) {
 }
 
 function cleanCar(s: string) {
-  return String(s || "")
+  let out = String(s || "")
     .replace(/\s+/g, " ")
     .replace(/["“”]/g, "'")
+    .replace(/\*/g, " ")
+    .replace(/_/g, " ")
     .replace(/\s+'/g, " '")
     .replace(/\b(Megane)\b/gi, "Mégane")
     .replace(/\bHuracan\b/gi, "Huracán")
@@ -275,7 +277,32 @@ function cleanCar(s: string) {
     .replace(/\bClubsport ?'?16\b/gi, "Clubsport '16")
     .replace(/\)\s*(\d{2})\b/g, ") '$1")
     .replace(/\s+\)/g, ")")
+    .replace(/\s+/g, " ")
     .trim()
+
+  // recupero generico OCR per finale anno a 2 cifre scritto male:
+  // R1816 -> R18 '16
+  // R18 16 -> R18 '16
+  // R18*16 -> R18 '16
+  // TS05016 -> TS050 '16
+  const compactYearMatch = out.match(/^(.+?)[\s'*.`-]?(\d{2})$/)
+  if (compactYearMatch) {
+    const base = compactYearMatch[1].trim()
+    const year = compactYearMatch[2]
+
+    const looksLikeCar =
+      /[A-Za-z]/.test(base) &&
+      (
+        /\d/.test(base) ||
+        /\b(Gr\.4|GT4|GT3|LMS|RSR|Hybrid|HYBRID|Vision|Touring|Cup|Trophy|Clubsport|Italia|Huracán|Huracan|Mégane|Megane)\b/i.test(base)
+      )
+
+    if (looksLikeCar && !/'\d{2}$/.test(out)) {
+      out = `${base} '${year}`
+    }
+  }
+
+  return out
 }
 
 function csvEscape(v: any) {
@@ -331,7 +358,7 @@ const KNOWN_CARS = [
 ]
 
 function normalizeCarLoose(s: string) {
-  return String(s || "")
+  return cleanCar(String(s || ""))
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
