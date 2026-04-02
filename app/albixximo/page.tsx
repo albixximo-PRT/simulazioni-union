@@ -4041,55 +4041,90 @@ function applyPilotCorrections() {
     />
 
     <select
-      defaultValue=""
-      onChange={(e) => {
-        const selected = e.target.value
-        if (!selected) return
+  defaultValue=""
+  onChange={(e) => {
+    const selected = e.target.value
+    if (!selected) return
 
-        const currentPos = row.posizione
+    const currentPos = row.posizione
 
-        const otherRow = displayRows.find(
-          (candidate) =>
-            candidate.posizione !== currentPos &&
-            String(candidate.nomePilota ?? "").trim() === selected
-        )
+    const otherRow = displayRows.find(
+      (candidate) =>
+        candidate.posizione !== currentPos &&
+        String(candidate.nomePilota ?? "").trim() === selected
+    )
 
-        if (!otherRow) {
-          e.currentTarget.value = ""
-          return
-        }
+    if (!otherRow) {
+      e.currentTarget.value = ""
+      return
+    }
 
-        const otherPos = otherRow.posizione
+    const otherPos = otherRow.posizione
 
-        setManualPilotDraft((prev) => {
-          const next = { ...prev }
+    const nextDraft: Record<number, string> = {}
 
-          const currentPilot = String(
-            next[currentPos] ?? row.nomePilota ?? ""
-          ).trim()
+    for (const r of displayRows) {
+      nextDraft[r.posizione] = String(r.nomePilota ?? "").trim()
+    }
 
-          const otherPilot = String(
-            next[otherPos] ?? otherRow.nomePilota ?? ""
-          ).trim()
+    const currentPilot = nextDraft[currentPos]
+    const otherPilot = nextDraft[otherPos]
 
-          next[currentPos] = otherPilot
-          next[otherPos] = currentPilot
+    nextDraft[currentPos] = otherPilot
+    nextDraft[otherPos] = currentPilot
 
-          return next
-        })
+    const cleaned: Record<number, string> = {}
 
-        e.currentTarget.value = ""
-      }}
-      style={{
-        width: "100%",
-        padding: "10px 12px",
-        borderRadius: 10,
-        border: "1px solid rgba(255,255,255,0.14)",
-        background: "rgba(0,0,0,0.24)",
-        color: "white",
-        boxSizing: "border-box",
-      }}
-    >
+    for (const baseRow of rows) {
+      const draftValue = String(nextDraft[baseRow.posizione] ?? "").trim()
+      const originalValue = String(baseRow.nomePilota ?? "").trim()
+
+      if (draftValue !== originalValue) {
+        cleaned[baseRow.posizione] = draftValue
+      }
+    }
+
+    const nextAutoOverrides: Record<number, string> = {}
+
+    for (const baseRow of rows) {
+      const finalPilotName = String(
+        cleaned[baseRow.posizione] ?? baseRow.nomePilota ?? ""
+      ).trim()
+
+      const originalAuto = String(baseRow.auto ?? "").trim()
+
+      if (!finalPilotName) continue
+
+      const sourceRow = rows.find((candidate) =>
+        sameDriverForMatch(candidate.nomePilota, finalPilotName)
+      )
+
+      if (!sourceRow) continue
+
+      const sourceAuto = String(sourceRow.auto ?? "").trim()
+
+      if (sourceAuto !== originalAuto) {
+        nextAutoOverrides[baseRow.posizione] = sourceAuto
+      }
+    }
+
+    setManualPilotOverrides(cleaned)
+    setManualAutoOverrides(nextAutoOverrides)
+    setManualPilotDraft({})
+    setShowPilotModal(false)
+
+    e.currentTarget.value = ""
+  }}
+  style={{
+    width: "100%",
+    padding: "10px 12px",
+    borderRadius: 10,
+    border: "1px solid rgba(255,255,255,0.14)",
+    background: "rgba(0,0,0,0.24)",
+    color: "white",
+    boxSizing: "border-box",
+  }}
+>
       <option value="" style={{ background: "#11151d", color: "white" }}>
         Scambia con...
       </option>
