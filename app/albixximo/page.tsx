@@ -3205,106 +3205,106 @@ export default function Page() {
             )}
 
             {displayRows.length > 0 && (
-              <div
-                style={{
-                  borderRadius: 14,
-                  border:
-                    matchSummary.fields.auto === "warn"
-                      ? "1px solid rgba(255,215,0,0.28)"
-                      : "1px solid rgba(255,255,255,0.10)",
-                  background:
-                    matchSummary.fields.auto === "warn"
-                      ? "rgba(255,215,0,0.08)"
-                      : "rgba(255,255,255,0.05)",
-                  padding: 12,
-                  display: "flex",
-                  gap: 12,
-                  flexWrap: "wrap",
-                  alignItems: "center",
-                }}
-              >
-                <div style={{ fontSize: 13, fontWeight: 800 }}>
-                  {matchSummary.fields.auto === "warn"
-                    ? "Correzioni Manuali disponibili. Auto sospette rilevate."
-                    : "Correzioni Manuali"}
-                </div>
+  <div
+    style={{
+      borderRadius: 14,
+      border:
+        matchSummary.fields.auto === "warn"
+          ? "1px solid rgba(255,215,0,0.28)"
+          : "1px solid rgba(255,255,255,0.10)",
+      background:
+        matchSummary.fields.auto === "warn"
+          ? "rgba(255,215,0,0.08)"
+          : "rgba(255,255,255,0.05)",
+      padding: 12,
+      display: "flex",
+      gap: 12,
+      flexWrap: "wrap",
+      alignItems: "center",
+    }}
+  >
+    <div style={{ fontSize: 13, fontWeight: 800 }}>
+      {matchSummary.fields.auto === "warn"
+        ? "Correzioni Manuali disponibili. Auto sospette rilevate."
+        : "Correzioni Manuali"}
+    </div>
 
-                <button
-                  onClick={openPilotCorrectionModal}
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,0.16)",
-                    background: "rgba(255,255,255,0.08)",
-                    color: "white",
-                    cursor: "pointer",
-                    fontWeight: 800,
-                    textTransform: "uppercase",
-                    fontSize: 12,
-                  }}
-                >
-                  Modifica Pilota
-                </button>
+    <button
+      onClick={openPilotCorrectionModal}
+      style={{
+        padding: "10px 12px",
+        borderRadius: 10,
+        border: "1px solid rgba(255,255,255,0.16)",
+        background: "rgba(255,255,255,0.08)",
+        color: "white",
+        cursor: "pointer",
+        fontWeight: 800,
+        textTransform: "uppercase",
+        fontSize: 12,
+      }}
+    >
+      Modifica Pilota
+    </button>
 
-                <button
-                  onClick={openAutoCorrectionModal}
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,0.16)",
-                    background:
-                      matchSummary.fields.auto === "warn"
-                        ? "rgba(160,90,255,0.18)"
-                        : "rgba(255,255,255,0.08)",
-                    color: "white",
-                    cursor: "pointer",
-                    fontWeight: 800,
-                    textTransform: "uppercase",
-                    fontSize: 12,
-                    boxShadow:
-                      matchSummary.fields.auto === "warn"
-                        ? "0 0 20px rgba(160,90,255,0.10)"
-                        : "none",
-                  }}
-                >
-                  Modifica Auto
-                </button>
+    <button
+      onClick={openAutoCorrectionModal}
+      style={{
+        padding: "10px 12px",
+        borderRadius: 10,
+        border: "1px solid rgba(255,255,255,0.16)",
+        background:
+          matchSummary.fields.auto === "warn"
+            ? "rgba(160,90,255,0.18)"
+            : "rgba(255,255,255,0.08)",
+        color: "white",
+        cursor: "pointer",
+        fontWeight: 800,
+        textTransform: "uppercase",
+        fontSize: 12,
+        boxShadow:
+          matchSummary.fields.auto === "warn"
+            ? "0 0 20px rgba(160,90,255,0.10)"
+            : "none",
+      }}
+    >
+      Modifica Auto
+    </button>
 
-                <button
-                  onClick={openDistaccoCorrectionModal}
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,0.16)",
-                    background: "rgba(255,255,255,0.08)",
-                    color: "white",
-                    cursor: "pointer",
-                    fontWeight: 800,
-                    textTransform: "uppercase",
-                    fontSize: 12,
-                  }}
-                >
-                  Modifica Distacco
-                </button>
-              </div>
-            )}
+    <button
+      onClick={openDistaccoCorrectionModal}
+      style={{
+        padding: "10px 12px",
+        borderRadius: 10,
+        border: "1px solid rgba(255,255,255,0.16)",
+        background: "rgba(255,255,255,0.08)",
+        color: "white",
+        cursor: "pointer",
+        fontWeight: 800,
+        textTransform: "uppercase",
+        fontSize: 12,
+      }}
+    >
+      Modifica Distacco
+    </button>
 
-            <button
-                  onClick={resetAllManualCorrections}
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,0.14)",
-                    background: "rgba(255,255,255,0.06)",
-                    color: "white",
-                    cursor: "pointer",
-                    fontWeight: 800,
-                    textTransform: "uppercase",
-                    fontSize: 12,
-                  }}
-                >
-                  Reset
-                </button>
+    <button
+      onClick={resetAllManualCorrections}
+      style={{
+        padding: "10px 12px",
+        borderRadius: 10,
+        border: "1px solid rgba(239,68,68,0.35)",
+        background: "rgba(239,68,68,0.14)",
+        color: "white",
+        cursor: "pointer",
+        fontWeight: 800,
+        textTransform: "uppercase",
+        fontSize: 12,
+      }}
+    >
+      Rimuovi modifiche
+    </button>
+  </div>
+)}
 
             {displayRows.length > 0 && (
               <div
