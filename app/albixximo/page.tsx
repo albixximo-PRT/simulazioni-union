@@ -117,6 +117,10 @@ function normalizePilotKey(value: string) {
   return normalizeMatchName(value)
 }
 
+function getRowStableKey(posizione: number) {
+  return `row-${posizione}`
+}
+
 function isClearlySuspiciousCar(value: string): boolean {
   const raw = String(value || "").trim()
   if (!raw) return true
@@ -2132,7 +2136,7 @@ export default function Page() {
 
     for (let i = 0; i < ordered.length; i++) {
       const row = ordered[i]
-      const key = normalizePilotKey(row.nomePilota)
+      const key = getRowStableKey(row.posizione)
       const dgKind = dgKinds[key] || "-"
       const dgSec = Number(dgSeconds[key] || 0)
       const rawDistacco = String(row.distacchi || "").trim()
@@ -2336,9 +2340,13 @@ export default function Page() {
   function applyPilotCorrections() {
     const cleaned: Record<number, string> = {}
     for (const row of rows) {
+      const hasDraft = Object.prototype.hasOwnProperty.call(manualPilotDraft, row.posizione)
       const draftValue = String(manualPilotDraft[row.posizione] ?? "").trim()
       const originalValue = String(row.nomePilota ?? "").trim()
-      if (draftValue && draftValue !== originalValue) {
+
+      if (!hasDraft) continue
+
+      if (draftValue !== originalValue) {
         cleaned[row.posizione] = draftValue
       }
     }
@@ -3477,7 +3485,7 @@ export default function Page() {
 
                     <tbody>
                       {displayRows.map((row, idx) => {
-                        const key = normalizePilotKey(row.nomePilota)
+                        const key = getRowStableKey(row.posizione)
                         const selectedKind = dgKinds[key] || "-"
                         const selectedSeconds = dgSeconds[key] || "-"
                         const isDoppiato = isDoppiatoValue(row.distacchi)
