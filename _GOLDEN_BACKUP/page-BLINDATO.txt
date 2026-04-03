@@ -19,6 +19,10 @@ type UnionRow = {
   lega: string
 }
 
+type DisplayRow = UnionRow & {
+  sourcePosizione: number
+}
+
 type UnionMeta = {
   gara: string
   lobby: string
@@ -53,6 +57,7 @@ type MatchSummary = {
 type DGKind = "-" | "P" | "S" | "DSQ"
 
 type DGRowComputed = UnionRow & {
+  sourcePosizione: number
   dgKind?: DGKind
   dgSeconds?: number
   dgLabel?: string
@@ -115,6 +120,10 @@ function normalizeSimpleValue(value: string) {
 
 function normalizePilotKey(value: string) {
   return normalizeMatchName(value)
+}
+
+function getRowStableKey(posizione: number) {
+  return `row-${posizione}`
 }
 
 function isClearlySuspiciousCar(value: string): boolean {
@@ -318,6 +327,26 @@ function parseManualGapMs(value: string): number | null {
 
   if ([mm, ss, ms].some(Number.isNaN)) return null
   return (mm * 60 + ss) * 1000 + ms
+}
+
+function getComparableRaceMsForOrdering(
+  row: Pick<UnionRow, "distacchi">,
+  leaderMs: number | null
+): number | null {
+  const rawDistacco = String(row.distacchi || "").trim()
+
+  if (!rawDistacco) return null
+  if (isNonComparableUnionValue(rawDistacco)) return null
+
+  const absoluteMs = parseLeaderRaceTimeMs(rawDistacco)
+  if (absoluteMs != null) return absoluteMs
+
+  if (leaderMs != null) {
+    const gapMs = parseGapToLeaderMs(rawDistacco)
+    if (gapMs != null) return leaderMs + gapMs
+  }
+
+  return null
 }
 
 function formatRaceTimeFromMs(totalMs: number): string {
@@ -766,8 +795,22 @@ function Pill({
         display: "inline-flex",
         alignItems: "center",
         gap: exporting ? 12 : 10,
-        padding: exporting ? "10px 16px" : "8px 12px",
-        borderRadius: 14,
+        padding:
+          exporting
+            ? left === "DOPPIATO"
+              ? "6px 14px"
+              : left === "PP" || left === "GV"
+                ? "7px 14px"
+                : "10px 16px"
+            : left === "DOPPIATO"
+              ? "5px 10px"
+              : "8px 12px",
+        borderRadius:
+          left === "DOPPIATO"
+            ? 12
+            : left === "PP" || left === "GV"
+              ? 13
+              : 14,
         fontSize: exporting ? 14 : 12,
         fontWeight: 900,
         letterSpacing: 0.6,
@@ -795,6 +838,7 @@ function Pill({
     </span>
   )
 }
+
 function PosBadge({ pos }: { pos: number }) {
   const base: React.CSSProperties = {
     display: "inline-flex",
@@ -914,7 +958,6 @@ function renderDistaccoCell(
 
   return t
 }
-
 function renderDGCell(
   kind: DGKind | undefined,
   seconds: number | undefined,
@@ -957,16 +1000,16 @@ function renderDGCell(
   const formatted = `+${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}.000`
 
   return (
-  <span
-    style={{
-      display: "inline-flex",
-      alignItems: "baseline",
-      justifyContent: "center",
-      gap: exporting ? 8 : 7,
-      whiteSpace: "nowrap",
-      lineHeight: 1,
-    }}
-  >
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "baseline",
+        justifyContent: "center",
+        gap: exporting ? 8 : 7,
+        whiteSpace: "nowrap",
+        lineHeight: 1,
+      }}
+    >
       <span
         style={{
           color: timeColor,
@@ -984,38 +1027,38 @@ function renderDGCell(
       </span>
 
       <span
-  style={{
-    color: "rgba(255,255,255,0.92)",
-    fontWeight: 800,
-    fontSize: exporting ? 13 : 12,
-    lineHeight: 1,
-    display: "inline-block",
-    transform: "translateY(-1px)",
-  }}
->
-  |
-</span>
+        style={{
+          color: "rgba(255,255,255,0.92)",
+          fontWeight: 800,
+          fontSize: exporting ? 13 : 12,
+          lineHeight: 1,
+          display: "inline-block",
+          transform: "translateY(-1px)",
+        }}
+      >
+        |
+      </span>
 
       <span
-  style={{
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    minWidth: exporting ? 24 : 20,
-    height: exporting ? 20 : 18,
-    padding: exporting ? "0 8px" : "0 7px",
-    borderRadius: 999,
-    background: pillBg,
-    border: pillBorder,
-    boxShadow: pillShadow,
-    color: "rgba(0,0,0,0.92)",
-    fontWeight: 900,
-    fontSize: exporting ? 12 : 11,
-    lineHeight: 1,
-    textTransform: "uppercase",
-    transform: "translateY(-1px)",
-  }}
->
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minWidth: exporting ? 24 : 20,
+          height: exporting ? 20 : 18,
+          padding: exporting ? "0 8px" : "0 7px",
+          borderRadius: 999,
+          background: pillBg,
+          border: pillBorder,
+          boxShadow: pillShadow,
+          color: "rgba(0,0,0,0.92)",
+          fontWeight: 900,
+          fontSize: exporting ? 12 : 11,
+          lineHeight: 1,
+          textTransform: "uppercase",
+          transform: "translateY(-1px)",
+        }}
+      >
         {kind}
       </span>
     </span>
@@ -1137,30 +1180,30 @@ function AppHeader({
       </div>
 
       <a
-  href="/union_logo.png"
-  target="_blank"
-  rel="noreferrer"
-  title="Union Logo"
-  style={{
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    textDecoration: "none",
-    flexShrink: 0,
-  }}
->
-  <img
-    src="/union_logo.png"
-    alt="Union"
-    style={{
-      height: 110,
-      width: "auto",
-      opacity: 0.98,
-      filter:
-        "drop-shadow(0 0 18px rgba(255,215,0,0.55)) drop-shadow(0 0 40px rgba(255,215,0,0.25))",
-    }}
-  />
-</a>
+        href="/union_logo.png"
+        target="_blank"
+        rel="noreferrer"
+        title="Union Logo"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          textDecoration: "none",
+          flexShrink: 0,
+        }}
+      >
+        <img
+          src="/union_logo.png"
+          alt="Union"
+          style={{
+            height: 110,
+            width: "auto",
+            opacity: 0.98,
+            filter:
+              "drop-shadow(0 0 18px rgba(255,215,0,0.55)) drop-shadow(0 0 40px rgba(255,215,0,0.25))",
+          }}
+        />
+      </a>
     </div>
   )
 }
@@ -1206,10 +1249,12 @@ function ResultsTable({
   previewRows,
   exporting = false,
   tableTitle = "Classifica Union (output)",
+  roundFinalMode = false,
 }: {
   previewRows: DGRowComputed[]
   exporting?: boolean
   tableTitle?: string
+  roundFinalMode?: boolean
 }) {
   return (
     <div
@@ -1348,7 +1393,7 @@ function ResultsTable({
                   width: exporting ? 90 : 74,
                 }}
               >
-                Gara
+                {exporting && roundFinalMode ? "ROUND" : "Gara"}
               </th>
               <th
                 style={{
@@ -1378,10 +1423,10 @@ function ResultsTable({
                   textAlign: "center",
                   fontSize: exporting ? 16 : 12,
                   opacity: 0.8,
-                  width: exporting ? 86 : 70,
+                  width: exporting ? 150 : 70,
                 }}
               >
-                Punti
+                {exporting && roundFinalMode ? "SUPERFINALS" : "Punti"}
               </th>
             </tr>
           </thead>
@@ -1394,23 +1439,23 @@ function ResultsTable({
 
               const rawDistacco = String(r.distacchi || "").trim().toUpperCase()
 
-const isBoxOrDsq =
-  rawDistacco === "BOX" || rawDistacco === "DSQ"
+              const isBoxOrDsq =
+                rawDistacco === "BOX" || rawDistacco === "DSQ"
 
-const isDnf =
-  rawDistacco === "DNF"
+              const isDnf =
+                rawDistacco === "DNF"
 
-const isZeroPointsStatus = isBoxOrDsq || isDnf
+              const isZeroPointsStatus = isBoxOrDsq || isDnf
 
-const bonusPoints =
-  (isPp ? 1 : 0) +
-  (isGv ? 1 : 0)
+              const bonusPoints =
+                (isPp ? 1 : 0) +
+                (isGv ? 1 : 0)
 
-const pointsValue = isBoxOrDsq
-  ? 0
-  : isDnf
-    ? bonusPoints
-    : getPointsForRow(r)
+              const pointsValue = isBoxOrDsq
+                ? 0
+                : isDnf
+                  ? bonusPoints
+                  : getPointsForRow(r)
 
               const isP1 = r.posizione === 1
               const isP2 = r.posizione === 2
@@ -1460,7 +1505,30 @@ const pointsValue = isBoxOrDsq
                         : undefined,
                     }}
                   >
-                    {r.nomePilota}
+                    {String(r.nomePilota || "").trim() ? (
+                      r.nomePilota
+                    ) : (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          padding: exporting ? "10px 14px" : "8px 12px",
+                          borderRadius: 12,
+                          background: "rgba(239,68,68,0.18)",
+                          border: "1px solid rgba(239,68,68,0.42)",
+                          boxShadow: "0 0 14px rgba(239,68,68,0.14)",
+                          color: "#fee2e2",
+                          fontWeight: 900,
+                          fontSize: exporting ? 13 : 11,
+                          letterSpacing: 0.5,
+                          textTransform: "uppercase",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Inserire Pilota
+                      </span>
+                    )}
                   </TableCell>
 
                   <TableCell
@@ -1519,7 +1587,27 @@ const pointsValue = isBoxOrDsq
                       borderBottom: "1px solid rgba(255,255,255,0.08)",
                     }}
                   >
-                    {String(r.gara).trim() === "-" ? (
+                    {exporting && roundFinalMode ? (
+                      <span
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          minWidth: exporting ? 42 : 34,
+                          height: exporting ? 28 : 24,
+                          padding: exporting ? "0 12px" : "0 8px",
+                          borderRadius: 999,
+                          background: "rgba(255,215,0,0.16)",
+                          border: "1px solid rgba(255,215,0,0.32)",
+                          boxShadow: "0 0 10px rgba(255,215,0,0.12)",
+                          color: "#fff8dc",
+                          fontWeight: 900,
+                          lineHeight: 1,
+                        }}
+                      >
+                        R1
+                      </span>
+                    ) : String(r.gara).trim() === "-" ? (
                       <span
                         style={{
                           display: "inline-flex",
@@ -1543,8 +1631,7 @@ const pointsValue = isBoxOrDsq
                       r.gara || "-"
                     )}
                   </TableCell>
-
-                  <TableCell exporting={exporting} align="center" mono dim={!r.lobby}>
+                                    <TableCell exporting={exporting} align="center" mono dim={!r.lobby}>
                     {r.lobby || "-"}
                   </TableCell>
 
@@ -1571,7 +1658,42 @@ const pointsValue = isBoxOrDsq
                       fontWeight: 900,
                     }}
                   >
-                    {isPodium ? (
+                    {exporting && roundFinalMode ? (
+                      r.posizione <= 7 ? (
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            padding: exporting ? "8px 14px" : "6px 12px",
+                            borderRadius: 999,
+                            background: "rgba(34,197,94,0.20)",
+                            border: "1px solid rgba(34,197,94,0.42)",
+                            boxShadow: "0 0 16px rgba(34,197,94,0.16)",
+                            color: "#dcfce7",
+                            fontWeight: 900,
+                            fontSize: exporting ? 13 : 11,
+                            letterSpacing: 0.4,
+                            textTransform: "none",
+                          }}
+                          title="Qualificato alle Superfinals"
+                        >
+                          Qualificato
+                        </span>
+                      ) : (
+                        <span
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            minWidth: 28,
+                            opacity: 0.7,
+                          }}
+                        >
+                          -
+                        </span>
+                      )
+                    ) : isPodium ? (
                       <span
                         style={{
                           position: "relative",
@@ -1611,9 +1733,9 @@ const pointsValue = isBoxOrDsq
                               position: "absolute",
                               top: exporting ? -6 : -5,
                               right:
-  isPp && isGv
-    ? (exporting ? -14 : -12)
-    : (exporting ? -9 : -7),
+                                isPp && isGv
+                                  ? (exporting ? -14 : -12)
+                                  : (exporting ? -9 : -7),
                               display: "flex",
                               gap: 1,
                               fontSize: exporting ? 10 : 9,
@@ -1688,9 +1810,9 @@ const pointsValue = isBoxOrDsq
                               position: "absolute",
                               top: exporting ? -6 : -5,
                               right:
-  isPp && isGv
-    ? (exporting ? -14 : -12)
-    : (exporting ? -9 : -7),
+                                isPp && isGv
+                                  ? (exporting ? -14 : -12)
+                                  : (exporting ? -9 : -7),
                               display: "flex",
                               gap: 1,
                               fontSize: exporting ? 10 : 9,
@@ -1821,6 +1943,7 @@ function SplashScreen() {
     </div>
   )
 }
+
 export default function Page() {
   const [files, setFiles] = useState<File[]>([])
   const [csv, setCsv] = useState("")
@@ -1844,6 +1967,7 @@ export default function Page() {
   const [exportTexts, setExportTexts] = useState<ExportTexts>(DEFAULT_EXPORT_TEXTS)
   const [exportTextsDraft, setExportTextsDraft] = useState<ExportTexts>(DEFAULT_EXPORT_TEXTS)
   const [workspaceKey, setWorkspaceKey] = useState(0)
+  const [isRoundFinal, setIsRoundFinal] = useState(false)
 
   const [detectedPoleDriver, setDetectedPoleDriver] = useState("")
   const [detectedBestLapDriver, setDetectedBestLapDriver] = useState("")
@@ -1853,6 +1977,14 @@ export default function Page() {
   const [showAutoModal, setShowAutoModal] = useState(false)
   const [manualAutoOverrides, setManualAutoOverrides] = useState<Record<number, string>>({})
   const [manualAutoDraft, setManualAutoDraft] = useState<Record<number, string>>({})
+
+  const [showPilotModal, setShowPilotModal] = useState(false)
+  const [manualPilotOverrides, setManualPilotOverrides] = useState<Record<number, string>>({})
+  const [manualPilotDraft, setManualPilotDraft] = useState<Record<number, string>>({})
+
+  const [showDistaccoModal, setShowDistaccoModal] = useState(false)
+  const [manualDistaccoOverrides, setManualDistaccoOverrides] = useState<Record<number, string>>({})
+  const [manualDistaccoDraft, setManualDistaccoDraft] = useState<Record<number, string>>({})
 
   const [dgKinds, setDgKinds] = useState<Record<string, DGKind>>({})
   const [dgSeconds, setDgSeconds] = useState<Record<string, string>>({})
@@ -1981,13 +2113,16 @@ export default function Page() {
     return String(manualGaraOverride || detectedGaraDisplay || "").trim()
   }, [manualGaraOverride, detectedGaraDisplay])
 
-  const displayRows = useMemo(() => {
+  const displayRows = useMemo<DisplayRow[]>(() => {
     return rows.map((r) => ({
       ...r,
+      sourcePosizione: r.posizione,
+      nomePilota: (manualPilotOverrides[r.posizione] ?? r.nomePilota ?? "").trim(),
       auto: (manualAutoOverrides[r.posizione] ?? r.auto ?? "").trim(),
+      distacchi: (manualDistaccoOverrides[r.posizione] ?? r.distacchi ?? "").trim(),
       gara: effectiveGara,
     }))
-  }, [rows, manualAutoOverrides, effectiveGara])
+  }, [rows, manualPilotOverrides, manualAutoOverrides, manualDistaccoOverrides, effectiveGara])
 
   const winnerPilot = useMemo(() => {
     const row = displayRows.find((r) => r.posizione === 1) || displayRows[0]
@@ -2008,17 +2143,54 @@ export default function Page() {
     return Object.keys(manualAutoOverrides).length > 0
   }, [manualAutoOverrides])
 
+  const hasManualPilotOverrides = useMemo(() => {
+    return Object.keys(manualPilotOverrides).length > 0
+  }, [manualPilotOverrides])
+
+  const hasManualDistaccoOverrides = useMemo(() => {
+    return Object.keys(manualDistaccoOverrides).length > 0
+  }, [manualDistaccoOverrides])
+
+  const shouldSyncDgTableWithManualEdits = useMemo(() => {
+    return hasManualPilotOverrides || hasManualDistaccoOverrides
+  }, [hasManualPilotOverrides, hasManualDistaccoOverrides])
+
   const finalRows = useMemo<DGRowComputed[]>(() => {
     if (displayRows.length === 0) return []
 
-    const ordered = [...displayRows].sort((a, b) => a.posizione - b.posizione)
+    const useEditedOrderingForDg = shouldSyncDgTableWithManualEdits
 
-    const leaderRow = ordered.find((r) => r.posizione === 1) || ordered[0]
+    const detectedLeaderRow =
+      displayRows.find((r) => parseLeaderRaceTimeMs(r.distacchi) != null) ||
+      displayRows.find((r) => r.posizione === 1) ||
+      displayRows[0]
+
+    const detectedLeaderMs = parseLeaderRaceTimeMs(detectedLeaderRow?.distacchi || "")
+
+    const ordered = useEditedOrderingForDg
+      ? [...displayRows].sort((a, b) => {
+          const aMs = getComparableRaceMsForOrdering(a, detectedLeaderMs)
+          const bMs = getComparableRaceMsForOrdering(b, detectedLeaderMs)
+
+          if (aMs != null && bMs != null) {
+            if (aMs !== bMs) return aMs - bMs
+            return a.posizione - b.posizione
+          }
+
+          if (aMs != null && bMs == null) return -1
+          if (aMs == null && bMs != null) return 1
+
+          return a.posizione - b.posizione
+        })
+      : [...displayRows].sort((a, b) => a.posizione - b.posizione)
+
+    const leaderRow =
+      ordered.find((r) => parseLeaderRaceTimeMs(r.distacchi) != null) || ordered[0]
     const leaderMs = parseLeaderRaceTimeMs(leaderRow?.distacchi || "")
 
     const comparable: Array<{
       originalIndex: number
-      row: UnionRow
+      row: DisplayRow
       totalMs: number
       dgKind: DGKind
       dgSeconds: number
@@ -2026,14 +2198,14 @@ export default function Page() {
 
     const nonComparable: Array<{
       originalIndex: number
-      row: UnionRow
+      row: DisplayRow
       dgKind: DGKind
       dgSeconds: number
     }> = []
 
     const dsqRows: Array<{
       originalIndex: number
-      row: UnionRow
+      row: DisplayRow
       dgKind: DGKind
     }> = []
 
@@ -2041,7 +2213,7 @@ export default function Page() {
 
     for (let i = 0; i < ordered.length; i++) {
       const row = ordered[i]
-      const key = normalizePilotKey(row.nomePilota)
+      const key = getRowStableKey(row.posizione)
       const dgKind = dgKinds[key] || "-"
       const dgSec = Number(dgSeconds[key] || 0)
       const rawDistacco = String(row.distacchi || "").trim()
@@ -2112,126 +2284,192 @@ export default function Page() {
     const newLeaderMs = comparable[0]?.totalMs ?? null
 
     const comparableRows: DGRowComputed[] = comparable.map((item, idx) => {
-  const isLeader = idx === 0
-  const updatedDistacco =
-    newLeaderMs == null
-      ? item.row.distacchi
-      : isLeader
-        ? formatRaceTimeFromMs(item.totalMs)
-        : formatGapFromLeaderMs(item.totalMs - newLeaderMs)
+      const isLeader = idx === 0
+      const updatedDistacco =
+        newLeaderMs == null
+          ? item.row.distacchi
+          : isLeader
+            ? formatRaceTimeFromMs(item.totalMs)
+            : formatGapFromLeaderMs(item.totalMs - newLeaderMs)
 
-  return {
-    ...item.row,
-    posizione: idx + 1,
-    distacchi: updatedDistacco,
-    dgKind: item.dgKind,
-    dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
-    dgLabel:
-      item.dgKind === "P" || item.dgKind === "S"
-        ? formatDGLabel(item.dgSeconds, item.dgKind)
-        : item.dgKind === "DSQ"
-          ? "DSQ"
-          : "",
-    computedRaceMs: item.totalMs,
-    computedNonComparable: false,
-    computedDsq: false,
-    originalWasLapped: isDoppiatoValue(item.row.distacchi),
-  }
-})
+      return {
+        ...item.row,
+        posizione: idx + 1,
+        distacchi: updatedDistacco,
+        dgKind: item.dgKind,
+        dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
+        dgLabel:
+          item.dgKind === "P" || item.dgKind === "S"
+            ? formatDGLabel(item.dgSeconds, item.dgKind)
+            : item.dgKind === "DSQ"
+              ? "DSQ"
+              : "",
+        computedRaceMs: item.totalMs,
+        computedNonComparable: false,
+        computedDsq: false,
+        originalWasLapped: isDoppiatoValue(item.row.distacchi),
+      }
+    })
 
     const nonComparableRows: DGRowComputed[] = nonComparable
-  .sort((a, b) => a.originalIndex - b.originalIndex)
-  .map((item, idx) => ({
-    ...item.row,
-    posizione: comparableRows.length + idx + 1,
-    dgKind: item.dgKind,
-    dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
-    dgLabel:
-      item.dgKind === "P" || item.dgKind === "S"
-        ? formatDGLabel(item.dgSeconds, item.dgKind)
-        : item.dgKind === "DSQ"
-          ? "DSQ"
-          : "",
-    computedRaceMs: null,
-    computedNonComparable: true,
-    computedDsq: false,
-    originalWasLapped: isDoppiatoValue(item.row.distacchi),
-  }))
+      .sort((a, b) => a.originalIndex - b.originalIndex)
+      .map((item, idx) => ({
+        ...item.row,
+        posizione: comparableRows.length + idx + 1,
+        dgKind: item.dgKind,
+        dgSeconds: item.dgKind === "-" ? 0 : item.dgSeconds,
+        dgLabel:
+          item.dgKind === "P" || item.dgKind === "S"
+            ? formatDGLabel(item.dgSeconds, item.dgKind)
+            : item.dgKind === "DSQ"
+              ? "DSQ"
+              : "",
+        computedRaceMs: null,
+        computedNonComparable: true,
+        computedDsq: false,
+        originalWasLapped: isDoppiatoValue(item.row.distacchi),
+      }))
 
-const dsqComputedRows: DGRowComputed[] = dsqRows
-  .sort((a, b) => a.originalIndex - b.originalIndex)
-  .map((item, idx) => ({
-    ...item.row,
-    posizione: comparableRows.length + nonComparableRows.length + idx + 1,
-    distacchi: "DSQ",
-    dgKind: "DSQ",
-    dgSeconds: 0,
-    dgLabel: "DSQ",
-    computedRaceMs: null,
-    computedNonComparable: false,
-    computedDsq: true,
-    originalWasLapped: isDoppiatoValue(item.row.distacchi),
-  }))
+    const dsqComputedRows: DGRowComputed[] = dsqRows
+      .sort((a, b) => a.originalIndex - b.originalIndex)
+      .map((item, idx) => ({
+        ...item.row,
+        posizione: comparableRows.length + nonComparableRows.length + idx + 1,
+        distacchi: "DSQ",
+        dgKind: "DSQ",
+        dgSeconds: 0,
+        dgLabel: "DSQ",
+        computedRaceMs: null,
+        computedNonComparable: false,
+        computedDsq: true,
+        originalWasLapped: isDoppiatoValue(item.row.distacchi),
+      }))
 
     return [...comparableRows, ...nonComparableRows, ...dsqComputedRows]
   }, [displayRows, dgKinds, dgSeconds, dgLapOverrides])
 
-  const finalCsv = useMemo(() => {
-  if (!finalRows.length) return ""
-
-  const header = "#,Nome pilota,Auto,Distacchi,-PP-,-GV-,Gara,Lobby,Lega"
-
-  let dnfCount = 0
-  let boxCount = 0
-  let previousGapMs = 0
-
-  const body = finalRows.map((r, index) => {
-    const rawDistacco = String(r.distacchi || "").trim().toUpperCase()
-    let csvDistacco = String(r.distacchi || "").trim()
-
-    if (index === 0) {
-      previousGapMs = 0
-    } else if (rawDistacco.startsWith("+")) {
-      const parsedGap = parseGapToLeaderMs(rawDistacco)
-      if (parsedGap != null) {
-        previousGapMs = parsedGap
-      }
-      csvDistacco = String(r.distacchi || "").trim()
-    } else if (isDoppiatoValue(rawDistacco)) {
-      previousGapMs += 10000
-      csvDistacco = formatGapFromLeaderMs(previousGapMs)
-    } else if (rawDistacco === "DNF") {
-      csvDistacco = formatRaceTimeFromMs(3600000 + dnfCount * 60000)
-      dnfCount++
-    } else if (rawDistacco === "BOX") {
-      csvDistacco = formatRaceTimeFromMs(7200000 + boxCount * 60000)
-      boxCount++
-    } else if (rawDistacco === "DSQ") {
-      csvDistacco = "DSQ"
-    } else {
-      csvDistacco = String(r.distacchi || "").trim()
+  const dgTableRows = useMemo<(DisplayRow | DGRowComputed)[]>(() => {
+    if (!shouldSyncDgTableWithManualEdits) {
+      return displayRows
     }
 
-    return [
-      r.posizione,
-      r.nomePilota,
-      r.auto,
-      csvDistacco,
-      r.pp,
-      r.gv,
-      r.gara,
-      r.lobby,
-      r.lega,
-    ]
-      .map((value) => {
-        const s = String(value ?? "").replace(/"/g, '""')
-        return s.includes(",") ? `"${s}"` : s
-      })
-      .join(",")
-  })
+    return finalRows
+  }, [shouldSyncDgTableWithManualEdits, displayRows, finalRows])
+  
+  const finalCsv = useMemo(() => {
+    if (!finalRows.length) return ""
 
-  return [header, ...body].join("\n")
-}, [finalRows])
+    const header = "#,Nome pilota,Auto,Distacchi,-PP-,-GV-,Gara,Lobby,Lega"
+
+    let dnfCount = 0
+    let boxCount = 0
+    let previousGapMs = 0
+
+    const body = finalRows.map((r, index) => {
+      const rawDistacco = String(r.distacchi || "").trim().toUpperCase()
+      let csvDistacco = String(r.distacchi || "").trim()
+
+      if (index === 0) {
+        previousGapMs = 0
+      } else if (rawDistacco.startsWith("+")) {
+        const parsedGap = parseGapToLeaderMs(rawDistacco)
+        if (parsedGap != null) {
+          previousGapMs = parsedGap
+        }
+        csvDistacco = String(r.distacchi || "").trim()
+      } else if (isDoppiatoValue(rawDistacco)) {
+        previousGapMs += 10000
+        csvDistacco = formatGapFromLeaderMs(previousGapMs)
+      } else if (rawDistacco === "DNF") {
+        csvDistacco = formatRaceTimeFromMs(3600000 + dnfCount * 60000)
+        dnfCount++
+      } else if (rawDistacco === "BOX") {
+        csvDistacco = formatRaceTimeFromMs(7200000 + boxCount * 60000)
+        boxCount++
+      } else if (rawDistacco === "DSQ") {
+        csvDistacco = "DSQ"
+      } else {
+        csvDistacco = String(r.distacchi || "").trim()
+      }
+
+      return [
+        r.posizione,
+        r.nomePilota,
+        r.auto,
+        csvDistacco,
+        r.pp,
+        r.gv,
+        r.gara,
+        r.lobby,
+        r.lega,
+      ]
+        .map((value) => {
+          const s = String(value ?? "").replace(/"/g, '""')
+          return s.includes(",") ? `"${s}"` : s
+        })
+        .join(",")
+    })
+
+    return [header, ...body].join("\n")
+  }, [finalRows])
+
+  function openPilotCorrectionModal() {
+  const nextDraft: Record<number, string> = {}
+  for (const row of displayRows) {
+    nextDraft[row.posizione] = String(row.nomePilota ?? "").trim()
+  }
+  setManualPilotDraft(nextDraft)
+  setShowPilotModal(true)
+}
+
+function applyPilotCorrections() {
+  const cleaned: Record<number, string> = {}
+
+  for (const row of rows) {
+    const draftValue = String(manualPilotDraft[row.posizione] ?? "").trim()
+    const originalValue = String(row.nomePilota ?? "").trim()
+
+    if (draftValue && draftValue !== originalValue) {
+      cleaned[row.posizione] = draftValue
+    }
+  }
+
+  const nextAutoOverrides: Record<number, string> = {}
+
+  for (const baseRow of rows) {
+    const finalPilotName = String(
+      cleaned[baseRow.posizione] ?? baseRow.nomePilota ?? ""
+    ).trim()
+
+    const originalAuto = String(baseRow.auto ?? "").trim()
+
+    if (!finalPilotName) continue
+
+    const sourceRow = rows.find((candidate) =>
+      sameDriverForMatch(candidate.nomePilota, finalPilotName)
+    )
+
+    if (!sourceRow) continue
+
+    const sourceAuto = String(sourceRow.auto ?? "").trim()
+
+    if (sourceAuto !== originalAuto) {
+      nextAutoOverrides[baseRow.posizione] = sourceAuto
+    }
+  }
+
+  setManualPilotOverrides(cleaned)
+  setManualAutoOverrides(nextAutoOverrides)
+  setShowPilotModal(false)
+}
+
+  function resetPilotCorrections() {
+  setManualPilotOverrides({})
+  setManualPilotDraft({})
+  setManualAutoOverrides({})
+  setManualAutoDraft({})
+  setShowPilotModal(false)
+}
 
   function openAutoCorrectionModal() {
     const nextDraft: Record<number, string> = {}
@@ -2261,6 +2499,48 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
     setShowAutoModal(false)
   }
 
+  function openDistaccoCorrectionModal() {
+    const nextDraft: Record<number, string> = {}
+    for (const row of displayRows) {
+      nextDraft[row.posizione] = String(row.distacchi ?? "").trim()
+    }
+    setManualDistaccoDraft(nextDraft)
+    setShowDistaccoModal(true)
+  }
+
+  function applyDistaccoCorrections() {
+    const cleaned: Record<number, string> = {}
+    for (const row of rows) {
+      const draftValue = String(manualDistaccoDraft[row.posizione] ?? "").trim()
+      const originalValue = String(row.distacchi ?? "").trim()
+      if (draftValue && draftValue !== originalValue) {
+        cleaned[row.posizione] = draftValue
+      }
+    }
+    setManualDistaccoOverrides(cleaned)
+    setShowDistaccoModal(false)
+  }
+
+  function resetDistaccoCorrections() {
+    setManualDistaccoOverrides({})
+    setManualDistaccoDraft({})
+    setShowDistaccoModal(false)
+  }
+
+  function resetAllManualCorrections() {
+    setManualPilotOverrides({})
+    setManualPilotDraft({})
+    setShowPilotModal(false)
+
+    setManualAutoOverrides({})
+    setManualAutoDraft({})
+    setShowAutoModal(false)
+
+    setManualDistaccoOverrides({})
+    setManualDistaccoDraft({})
+    setShowDistaccoModal(false)
+  }
+
   function handleLogin() {
     if (inputPassword === APP_PASSWORD) {
       setAuthorized(true)
@@ -2285,9 +2565,19 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
     setDetectedBestLapDriver("")
     setDetectedRaceOrder([])
     setManualGaraOverride("")
+
+    setManualPilotOverrides({})
+    setManualPilotDraft({})
+    setShowPilotModal(false)
+
     setManualAutoOverrides({})
     setManualAutoDraft({})
     setShowAutoModal(false)
+
+    setManualDistaccoOverrides({})
+    setManualDistaccoDraft({})
+    setShowDistaccoModal(false)
+
     setDgKinds({})
     setDgSeconds({})
     setDgLapOverrides({})
@@ -2298,6 +2588,7 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
     setShowTable(true)
     setShowReq(false)
     setShowExportModal(false)
+    setIsRoundFinal(false)
     setInputPassword("")
     setLoginError("")
     setExportTexts(DEFAULT_EXPORT_TEXTS)
@@ -2309,7 +2600,6 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
 
     setWorkspaceKey((k) => k + 1)
   }
-
   async function performExportTablePng() {
     if (!exportRef.current || finalRows.length === 0) return
 
@@ -2371,9 +2661,19 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
     setDetectedBestLapDriver("")
     setDetectedRaceOrder([])
     setManualGaraOverride("")
+
+    setManualPilotOverrides({})
+    setManualPilotDraft({})
+    setShowPilotModal(false)
+
     setManualAutoOverrides({})
     setManualAutoDraft({})
     setShowAutoModal(false)
+
+    setManualDistaccoOverrides({})
+    setManualDistaccoDraft({})
+    setShowDistaccoModal(false)
+
     setDgKinds({})
     setDgSeconds({})
     setDgLapOverrides({})
@@ -2614,7 +2914,8 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
       </div>
     )
   }
-    return (
+
+  return (
     <div
       key={workspaceKey}
       style={{
@@ -2913,10 +3214,38 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
                 >
                   {exporting ? "Esportazione PNG..." : "Esporta PNG tabella"}
                 </button>
+
+                <label
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 10,
+                    padding: "10px 12px",
+                    borderRadius: 14,
+                    border: "1px solid rgba(255,215,0,0.22)",
+                    background: isRoundFinal ? "rgba(255,215,0,0.14)" : "rgba(255,255,255,0.06)",
+                    color: "white",
+                    cursor: "pointer",
+                    fontWeight: 900,
+                    letterSpacing: 0.4,
+                    textTransform: "uppercase",
+                    fontSize: 12,
+                    boxShadow: isRoundFinal ? "0 0 18px rgba(255,215,0,0.10)" : "none",
+                    userSelect: "none",
+                  }}
+                  title="Attiva layout speciale PNG per le finali di round"
+                >
+                  <input
+                    type="checkbox"
+                    checked={isRoundFinal}
+                    onChange={(e) => setIsRoundFinal(e.target.checked)}
+                    style={{ transform: "scale(1.1)" }}
+                  />
+                  Finali di Round
+                </label>
               </div>
             )}
-
-            {warning && (
+                        {warning && (
               <div
                 style={{
                   whiteSpace: "pre-wrap",
@@ -2987,76 +3316,106 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
             )}
 
             {displayRows.length > 0 && (
-              <div
-                style={{
-                  borderRadius: 14,
-                  border:
-                    matchSummary.fields.auto === "warn"
-                      ? "1px solid rgba(255,215,0,0.28)"
-                      : "1px solid rgba(255,255,255,0.10)",
-                  background:
-                    matchSummary.fields.auto === "warn"
-                      ? "rgba(255,215,0,0.08)"
-                      : "rgba(255,255,255,0.05)",
-                  padding: 12,
-                  display: "flex",
-                  gap: 12,
-                  flexWrap: "wrap",
-                  alignItems: "center",
-                }}
-              >
-                <div style={{ fontSize: 13, fontWeight: 800 }}>
-                  {matchSummary.fields.auto === "warn"
-                    ? "Auto sospette rilevate. Puoi correggerle manualmente."
-                    : hasManualAutoOverrides
-                      ? "Correzioni auto manuali attive."
-                      : "Correzione auto manuale opzionale."}
-                </div>
+  <div
+    style={{
+      borderRadius: 14,
+      border:
+        matchSummary.fields.auto === "warn"
+          ? "1px solid rgba(255,215,0,0.28)"
+          : "1px solid rgba(255,255,255,0.10)",
+      background:
+        matchSummary.fields.auto === "warn"
+          ? "rgba(255,215,0,0.08)"
+          : "rgba(255,255,255,0.05)",
+      padding: 12,
+      display: "flex",
+      gap: 12,
+      flexWrap: "wrap",
+      alignItems: "center",
+    }}
+  >
+    <div style={{ fontSize: 13, fontWeight: 800 }}>
+      {matchSummary.fields.auto === "warn"
+        ? "Correzioni Manuali disponibili. Auto sospette rilevate."
+        : "Correzioni Manuali"}
+    </div>
 
-                <button
-                  onClick={openAutoCorrectionModal}
-                  style={{
-                    padding: "10px 12px",
-                    borderRadius: 10,
-                    border: "1px solid rgba(255,255,255,0.16)",
-                    background:
-                      matchSummary.fields.auto === "warn"
-                        ? "rgba(160,90,255,0.18)"
-                        : "rgba(255,255,255,0.08)",
-                    color: "white",
-                    cursor: "pointer",
-                    fontWeight: 800,
-                    textTransform: "uppercase",
-                    fontSize: 12,
-                    boxShadow:
-                      matchSummary.fields.auto === "warn"
-                        ? "0 0 20px rgba(160,90,255,0.10)"
-                        : "none",
-                  }}
-                >
-                  Modifica Auto
-                </button>
+    <button
+      onClick={openPilotCorrectionModal}
+      style={{
+        padding: "10px 12px",
+        borderRadius: 10,
+        border: "1px solid rgba(255,255,255,0.16)",
+        background: "rgba(255,255,255,0.08)",
+        color: "white",
+        cursor: "pointer",
+        fontWeight: 800,
+        textTransform: "uppercase",
+        fontSize: 12,
+      }}
+    >
+      Modifica Pilota
+    </button>
 
-                {hasManualAutoOverrides && (
-                  <button
-                    onClick={resetAutoCorrections}
-                    style={{
-                      padding: "10px 12px",
-                      borderRadius: 10,
-                      border: "1px solid rgba(255,255,255,0.14)",
-                      background: "rgba(255,255,255,0.06)",
-                      color: "white",
-                      cursor: "pointer",
-                      fontWeight: 800,
-                      textTransform: "uppercase",
-                      fontSize: 12,
-                    }}
-                  >
-                    Reset auto manuali
-                  </button>
-                )}
-              </div>
-            )}
+    <button
+      onClick={openAutoCorrectionModal}
+      style={{
+        padding: "10px 12px",
+        borderRadius: 10,
+        border: "1px solid rgba(255,255,255,0.16)",
+        background:
+          matchSummary.fields.auto === "warn"
+            ? "rgba(160,90,255,0.18)"
+            : "rgba(255,255,255,0.08)",
+        color: "white",
+        cursor: "pointer",
+        fontWeight: 800,
+        textTransform: "uppercase",
+        fontSize: 12,
+        boxShadow:
+          matchSummary.fields.auto === "warn"
+            ? "0 0 20px rgba(160,90,255,0.10)"
+            : "none",
+      }}
+    >
+      Modifica Auto
+    </button>
+
+    <button
+      onClick={openDistaccoCorrectionModal}
+      style={{
+        padding: "10px 12px",
+        borderRadius: 10,
+        border: "1px solid rgba(255,255,255,0.16)",
+        background: "rgba(255,255,255,0.08)",
+        color: "white",
+        cursor: "pointer",
+        fontWeight: 800,
+        textTransform: "uppercase",
+        fontSize: 12,
+      }}
+    >
+      Modifica Distacco
+    </button>
+
+    <button
+      onClick={resetAllManualCorrections}
+      style={{
+        padding: "10px 12px",
+        borderRadius: 10,
+        border: "1px solid rgba(239,68,68,0.35)",
+        background: "rgba(239,68,68,0.14)",
+        color: "white",
+        cursor: "pointer",
+        fontWeight: 800,
+        textTransform: "uppercase",
+        fontSize: 12,
+      }}
+    >
+      Rimuovi modifiche
+    </button>
+  </div>
+)}
 
             {displayRows.length > 0 && (
               <div
@@ -3172,32 +3531,30 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
               </div>
             )}
 
-            {/* TABELLONA RISULTATI SUBITO DOPO ESTRAZIONE */}
-{showTable && finalRows.length > 0 && (
-  <ResultsTable
-  previewRows={finalRows}
-  tableTitle={`Classifica definitiva Union - ${unionMeta.lega ? unionMeta.lega + " " : ""}Lobby ${formatLobbyShort(unionMeta.lobby)} Gara ${effectiveGara || "-"}`}
-/>
-)}
+            {showTable && finalRows.length > 0 && (
+              <ResultsTable
+                previewRows={finalRows}
+                tableTitle={`Classifica definitiva Union - ${unionMeta.lega ? unionMeta.lega + " " : ""}Lobby ${formatLobbyShort(unionMeta.lobby)} Gara ${effectiveGara || "-"}`}
+              />
+            )}
 
-{/* DIREZIONE GARA DOPO LA TABELLA */}
-{displayRows.length > 0 && (
-  <div
-    style={{
-      borderRadius: 16,
-      border: "1px solid rgba(255,255,255,0.10)",
-      background: "rgba(0,0,0,0.18)",
-      padding: 14,
-      display: "grid",
-      gap: 12,
-    }}
-  >
-    <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
-      <div style={{ fontWeight: 900, opacity: 0.96 }}>Direzione Gara</div>
-      <div style={{ fontSize: 12, opacity: 0.78 }}>
-        P e S modificano entrambi la classifica. DSQ manda il pilota in fondo.
-      </div>
-    </div>
+            {displayRows.length > 0 && (
+              <div
+                style={{
+                  borderRadius: 16,
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  background: "rgba(0,0,0,0.18)",
+                  padding: 14,
+                  display: "grid",
+                  gap: 12,
+                }}
+              >
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+                  <div style={{ fontWeight: 900, opacity: 0.96 }}>Direzione Gara</div>
+                  <div style={{ fontSize: 12, opacity: 0.78 }}>
+                    P e S modificano entrambi la classifica. DSQ manda il pilota in fondo.
+                  </div>
+                </div>
 
                 <div
                   style={{
@@ -3229,17 +3586,17 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
                           Segnalazioni
                         </th>
                         <th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.82, width: "20%" }}>
-  Gap finale doppiato
-</th>
-<th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.82, width: "6%" }}>
-  X
-</th>
+                          Gap finale doppiato
+                        </th>
+                        <th style={{ padding: "12px 12px", textAlign: "center", fontSize: 12, opacity: 0.82, width: "6%" }}>
+                          X
+                        </th>
                       </tr>
                     </thead>
 
                     <tbody>
-                      {displayRows.map((row, idx) => {
-                        const key = normalizePilotKey(row.nomePilota)
+                      {dgTableRows.map((row, idx) => {
+                        const key = getRowStableKey(row.sourcePosizione ?? row.posizione)
                         const selectedKind = dgKinds[key] || "-"
                         const selectedSeconds = dgSeconds[key] || "-"
                         const isDoppiato = isDoppiatoValue(row.distacchi)
@@ -3248,7 +3605,7 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
 
                         return (
                           <tr
-                            key={`dg-${row.posizione}-${row.nomePilota}-${idx}`}
+                            key={`dg-${row.sourcePosizione ?? row.posizione}-${row.nomePilota}-${idx}`}
                             style={{
                               background: idx % 2 === 0 ? "rgba(255,255,255,0.02)" : "rgba(0,0,0,0.10)",
                             }}
@@ -3389,83 +3746,83 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
                             </TableCell>
 
                             <TableCell align="center">
-  {isDoppiato ? (
-    <div style={{ display: "grid", gap: 6, justifyItems: "center" }}>
-      <input
-        value={manualGap}
-        onChange={(e) =>
-          setDgLapOverrides((prev) => ({
-            ...prev,
-            [key]: e.target.value,
-          }))
-        }
-        placeholder="1:14.960"
-        style={{
-          width: 120,
-          padding: "8px 10px",
-          borderRadius: 10,
-          border: "1px solid rgba(255,255,255,0.14)",
-          background: "rgba(0,0,0,0.26)",
-          color: "white",
-          textAlign: "center",
-          fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-        }}
-      />
-      <div
-        style={{
-          fontSize: 11,
-          opacity: manualGapValid ? 0.65 : 1,
-          color: manualGapValid ? "rgba(255,255,255,0.65)" : "#ff8a8a",
-        }}
-      >
-        {manualGap.trim()
-          ? manualGapValid
-            ? "Gap valido"
-            : "Usa m:ss.mmm"
-          : "Inserisci gap finale"}
-      </div>
-    </div>
-  ) : (
-    "-"
-  )}
-</TableCell>
+                              {isDoppiato ? (
+                                <div style={{ display: "grid", gap: 6, justifyItems: "center" }}>
+                                  <input
+                                    value={manualGap}
+                                    onChange={(e) =>
+                                      setDgLapOverrides((prev) => ({
+                                        ...prev,
+                                        [key]: e.target.value,
+                                      }))
+                                    }
+                                    placeholder="1:14.960"
+                                    style={{
+                                      width: 120,
+                                      padding: "8px 10px",
+                                      borderRadius: 10,
+                                      border: "1px solid rgba(255,255,255,0.14)",
+                                      background: "rgba(0,0,0,0.26)",
+                                      color: "white",
+                                      textAlign: "center",
+                                      fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                                    }}
+                                  />
+                                  <div
+                                    style={{
+                                      fontSize: 11,
+                                      opacity: manualGapValid ? 0.65 : 1,
+                                      color: manualGapValid ? "rgba(255,255,255,0.65)" : "#ff8a8a",
+                                    }}
+                                  >
+                                    {manualGap.trim()
+                                      ? manualGapValid
+                                        ? "Gap valido"
+                                        : "Usa m:ss.mmm"
+                                      : "Inserisci gap finale"}
+                                  </div>
+                                </div>
+                              ) : (
+                                "-"
+                              )}
+                            </TableCell>
 
-<TableCell align="center">
-  <button
-    onClick={() => {
-      setDgKinds((prev) => {
-        const next = { ...prev }
-        delete next[key]
-        return next
-      })
-      setDgSeconds((prev) => {
-        const next = { ...prev }
-        delete next[key]
-        return next
-      })
-      setDgLapOverrides((prev) => {
-        const next = { ...prev }
-        delete next[key]
-        return next
-      })
-    }}
-    style={{
-      width: 34,
-      height: 34,
-      borderRadius: 10,
-      border: "1px solid rgba(255,255,255,0.14)",
-      background: "rgba(255,255,255,0.06)",
-      color: "white",
-      cursor: "pointer",
-      fontWeight: 900,
-      fontSize: 16,
-      lineHeight: 1,
-    }}
-    title="Reset DG"
-  >
-    ×
-  </button>
-</TableCell>
+                            <TableCell align="center">
+                              <button
+                                onClick={() => {
+                                  setDgKinds((prev) => {
+                                    const next = { ...prev }
+                                    delete next[key]
+                                    return next
+                                  })
+                                  setDgSeconds((prev) => {
+                                    const next = { ...prev }
+                                    delete next[key]
+                                    return next
+                                  })
+                                  setDgLapOverrides((prev) => {
+                                    const next = { ...prev }
+                                    delete next[key]
+                                    return next
+                                  })
+                                }}
+                                style={{
+                                  width: 34,
+                                  height: 34,
+                                  borderRadius: 10,
+                                  border: "1px solid rgba(255,255,255,0.14)",
+                                  background: "rgba(255,255,255,0.06)",
+                                  color: "white",
+                                  cursor: "pointer",
+                                  fontWeight: 900,
+                                  fontSize: 16,
+                                  lineHeight: 1,
+                                }}
+                                title="Reset DG"
+                              >
+                                ×
+                              </button>
+                            </TableCell>
                           </tr>
                         )
                       })}
@@ -3476,22 +3833,22 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
             )}
 
             {error && (
-  <pre
-    style={{
-      whiteSpace: "pre-wrap",
-      color: "#ff6b6b",
-      background: "rgba(0,0,0,0.35)",
-      border: "1px solid rgba(255,255,255,0.10)",
-      padding: 12,
-      borderRadius: 14,
-      overflowX: "auto",
-    }}
-  >
-    {error}
-  </pre>
-)}
+              <pre
+                style={{
+                  whiteSpace: "pre-wrap",
+                  color: "#ff6b6b",
+                  background: "rgba(0,0,0,0.35)",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  padding: 12,
+                  borderRadius: 14,
+                  overflowX: "auto",
+                }}
+              >
+                {error}
+              </pre>
+            )}
 
-{finalCsv && (
+            {finalCsv && (
               <div
                 style={{
                   borderRadius: 16,
@@ -3553,6 +3910,539 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
         </div>
       </div>
 
+      {showPilotModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.72)",
+            backdropFilter: "blur(6px)",
+            display: "grid",
+            placeItems: "center",
+            zIndex: 9999,
+            padding: 20,
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 1100,
+              borderRadius: 22,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "linear-gradient(180deg, rgba(18,22,31,0.98), rgba(8,10,15,0.98))",
+              boxShadow: "0 20px 80px rgba(0,0,0,0.55)",
+              padding: 20,
+              display: "grid",
+              gap: 16,
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 22, fontWeight: 900 }}>Correzione Pilota Manuale</div>
+              <div style={{ marginTop: 6, fontSize: 13, opacity: 0.76 }}>
+                Modifica manualmente il nome pilota. Le correzioni verranno applicate a tabella, DG, CSV e PNG.
+              </div>
+            </div>
+
+            <div
+              style={{
+                borderRadius: 16,
+                border: "1px solid rgba(255,255,255,0.10)",
+                background: "rgba(0,0,0,0.22)",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  maxHeight: "60vh",
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                }}
+              >
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    tableLayout: "fixed",
+                  }}
+                >
+                  <thead
+  style={{
+    position: "sticky",
+    top: 0,
+    zIndex: 2,
+    background: "rgba(10,12,18,0.96)",
+    backdropFilter: "blur(10px)",
+  }}
+>
+  <tr>
+    <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 320 }}>
+      Pilota OCR
+    </th>
+    <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8 }}>
+      Pilota corretto
+    </th>
+  </tr>
+</thead>
+                  <tbody>
+                    {displayRows.map((row) => {
+                      const currentValue = String(manualPilotDraft[row.posizione] ?? "").trim()
+                      const originalValue = String(row.nomePilota ?? "").trim()
+                      const changed = currentValue !== originalValue
+
+                      return (
+                        <tr
+                          key={`manual-pilot-${row.posizione}`}
+                          style={{
+                            background: changed
+                              ? "linear-gradient(90deg, rgba(160,90,255,0.10), rgba(255,255,255,0.02))"
+                              : "transparent",
+                          }}
+                        >
+                    
+
+                          <td
+                            style={{
+                              padding: "12px",
+                              borderBottom: "1px solid rgba(255,255,255,0.08)",
+                              color: "rgba(255,255,255,0.86)",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {row.nomePilota || "-"}
+                          </td>
+
+                          <td
+  style={{
+    padding: "12px",
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
+  }}
+>
+  <div style={{ display: "grid", gap: 8 }}>
+    <input
+      value={manualPilotDraft[row.posizione] ?? ""}
+      onChange={(e) =>
+        setManualPilotDraft((prev) => ({
+          ...prev,
+          [row.posizione]: e.target.value,
+        }))
+      }
+      placeholder="Correggi nome pilota"
+      style={{
+        width: "100%",
+        padding: "10px 12px",
+        borderRadius: 10,
+        border: changed
+          ? "1px solid rgba(160,90,255,0.30)"
+          : "1px solid rgba(255,255,255,0.14)",
+        background: "rgba(0,0,0,0.24)",
+        color: "white",
+        boxSizing: "border-box",
+      }}
+    />
+
+    <select
+  defaultValue=""
+  onChange={(e) => {
+    const selected = e.target.value
+    if (!selected) return
+
+    const currentPos = row.posizione
+
+    const otherRow = displayRows.find(
+      (candidate) =>
+        candidate.posizione !== currentPos &&
+        String(candidate.nomePilota ?? "").trim() === selected
+    )
+
+    if (!otherRow) {
+      e.currentTarget.value = ""
+      return
+    }
+
+    const otherPos = otherRow.posizione
+
+    const nextDraft: Record<number, string> = {}
+
+    for (const r of displayRows) {
+      nextDraft[r.posizione] = String(r.nomePilota ?? "").trim()
+    }
+
+    const currentPilot = nextDraft[currentPos]
+    const otherPilot = nextDraft[otherPos]
+
+    nextDraft[currentPos] = otherPilot
+    nextDraft[otherPos] = currentPilot
+
+    const cleaned: Record<number, string> = {}
+
+    for (const baseRow of rows) {
+      const draftValue = String(nextDraft[baseRow.posizione] ?? "").trim()
+      const originalValue = String(baseRow.nomePilota ?? "").trim()
+
+      if (draftValue !== originalValue) {
+        cleaned[baseRow.posizione] = draftValue
+      }
+    }
+
+    const nextAutoOverrides: Record<number, string> = {}
+
+    for (const baseRow of rows) {
+      const finalPilotName = String(
+        cleaned[baseRow.posizione] ?? baseRow.nomePilota ?? ""
+      ).trim()
+
+      const originalAuto = String(baseRow.auto ?? "").trim()
+
+      if (!finalPilotName) continue
+
+      const sourceRow = rows.find((candidate) =>
+        sameDriverForMatch(candidate.nomePilota, finalPilotName)
+      )
+
+      if (!sourceRow) continue
+
+      const sourceAuto = String(sourceRow.auto ?? "").trim()
+
+      if (sourceAuto !== originalAuto) {
+        nextAutoOverrides[baseRow.posizione] = sourceAuto
+      }
+    }
+
+    setManualPilotOverrides(cleaned)
+    setManualAutoOverrides(nextAutoOverrides)
+    setManualPilotDraft({})
+    setShowPilotModal(false)
+
+    e.currentTarget.value = ""
+  }}
+  style={{
+    width: "100%",
+    padding: "10px 12px",
+    borderRadius: 10,
+    border: "1px solid rgba(255,255,255,0.14)",
+    background: "rgba(0,0,0,0.24)",
+    color: "white",
+    boxSizing: "border-box",
+  }}
+>
+      <option value="" style={{ background: "#11151d", color: "white" }}>
+        Scambia con...
+      </option>
+
+      {displayRows
+        .filter((candidate) => candidate.posizione !== row.posizione)
+        .map((candidate) => (
+          <option
+            key={`pilot-option-${row.posizione}-${candidate.posizione}`}
+            value={candidate.nomePilota}
+            style={{ background: "#11151d", color: "white" }}
+          >
+            {candidate.nomePilota}
+          </option>
+        ))}
+    </select>
+  </div>
+</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, flexWrap: "wrap" }}>
+  <button
+    onClick={() => setShowPilotModal(false)}
+    style={{
+      padding: "12px 16px",
+      borderRadius: 14,
+      border: "1px solid rgba(255,255,255,0.14)",
+      background: "rgba(255,255,255,0.06)",
+      color: "white",
+      cursor: "pointer",
+      fontWeight: 900,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    }}
+  >
+    Chiudi
+  </button>
+
+  <button
+    onClick={resetPilotCorrections}
+    style={{
+      padding: "12px 16px",
+      borderRadius: 14,
+      border: "1px solid rgba(255,255,255,0.14)",
+      background: "rgba(255,255,255,0.06)",
+      color: "white",
+      cursor: "pointer",
+      fontWeight: 900,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+    }}
+  >
+    Reset
+  </button>
+
+  <button
+    onClick={applyPilotCorrections}
+    style={{
+      padding: "12px 16px",
+      borderRadius: 14,
+      border: "1px solid rgba(160,90,255,0.30)",
+      background: "rgba(160,90,255,0.20)",
+      color: "white",
+      cursor: "pointer",
+      fontWeight: 900,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+      boxShadow: "0 0 22px rgba(160,90,255,0.12)",
+    }}
+  >
+    Applica correzioni
+  </button>
+</div>
+          </div>
+        </div>
+      )}
+
+      {showDistaccoModal && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.72)",
+            backdropFilter: "blur(6px)",
+            display: "grid",
+            placeItems: "center",
+            zIndex: 9999,
+            padding: 20,
+          }}
+        >
+          <div
+            style={{
+              width: "100%",
+              maxWidth: 1100,
+              borderRadius: 22,
+              border: "1px solid rgba(255,255,255,0.12)",
+              background: "linear-gradient(180deg, rgba(18,22,31,0.98), rgba(8,10,15,0.98))",
+              boxShadow: "0 20px 80px rgba(0,0,0,0.55)",
+              padding: 20,
+              display: "grid",
+              gap: 16,
+            }}
+          >
+            <div>
+              <div style={{ fontSize: 22, fontWeight: 900 }}>Correzione Distacco Manuale</div>
+              <div style={{ marginTop: 6, fontSize: 13, opacity: 0.76 }}>
+                Inserisci un distacco manuale oppure uno stato come DOPPIATO, DNF o BOX. Le correzioni verranno applicate a tabella, DG, CSV e PNG.
+              </div>
+            </div>
+
+            <div
+              style={{
+                borderRadius: 16,
+                border: "1px solid rgba(255,255,255,0.10)",
+                background: "rgba(0,0,0,0.22)",
+                overflow: "hidden",
+              }}
+            >
+              <div
+                style={{
+                  maxHeight: "60vh",
+                  overflowY: "auto",
+                  overflowX: "hidden",
+                }}
+              >
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    tableLayout: "fixed",
+                  }}
+                >
+                  <thead
+                    style={{
+                      position: "sticky",
+                      top: 0,
+                      zIndex: 2,
+                      background: "rgba(10,12,18,0.96)",
+                      backdropFilter: "blur(10px)",
+                    }}
+                  >
+                    <tr>
+                      <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 70 }}>#</th>
+                      <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 280 }}>Pilota</th>
+                      <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8, width: 220 }}>Distacco OCR</th>
+                      <th style={{ padding: "12px", textAlign: "left", fontSize: 12, opacity: 0.8 }}>Distacco corretto</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {displayRows.map((row) => {
+                      const currentValue = String(manualDistaccoDraft[row.posizione] ?? "").trim()
+                      const originalValue = String(row.distacchi ?? "").trim()
+                      const changed = currentValue !== originalValue
+
+                      return (
+                        <tr
+                          key={`manual-distacco-${row.posizione}`}
+                          style={{
+                            background: changed
+                              ? "linear-gradient(90deg, rgba(160,90,255,0.10), rgba(255,255,255,0.02))"
+                              : "transparent",
+                          }}
+                        >
+                          <td style={{ padding: "12px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                            <PosBadge pos={row.posizione} />
+                          </td>
+
+                          <td
+                            style={{
+                              padding: "12px",
+                              borderBottom: "1px solid rgba(255,255,255,0.08)",
+                              color: "rgba(255,255,255,0.86)",
+                              fontWeight: 700,
+                            }}
+                          >
+                            {row.nomePilota || "-"}
+                          </td>
+
+                          <td
+                            style={{
+                              padding: "12px",
+                              borderBottom: "1px solid rgba(255,255,255,0.08)",
+                              color: "rgba(255,255,255,0.86)",
+                              fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                              fontSize: 13,
+                            }}
+                          >
+                            {row.distacchi || "-"}
+                          </td>
+
+                          <td
+  style={{
+    padding: "12px",
+    borderBottom: "1px solid rgba(255,255,255,0.08)",
+    display: "grid",
+    gap: 8,
+  }}
+>
+  <input
+    value={manualDistaccoDraft[row.posizione] ?? ""}
+    onChange={(e) =>
+      setManualDistaccoDraft((prev) => ({
+        ...prev,
+        [row.posizione]: e.target.value,
+      }))
+    }
+    placeholder="Es. +12.345 / +01:14.960 / DOPPIATO / DNF / BOX"
+    style={{
+      width: "100%",
+      padding: "10px 12px",
+      borderRadius: 10,
+      border: changed
+        ? "1px solid rgba(160,90,255,0.30)"
+        : "1px solid rgba(255,255,255,0.14)",
+      background: "rgba(0,0,0,0.24)",
+      color: "white",
+      boxSizing: "border-box",
+    }}
+  />
+
+  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+    {["DOPPIATO", "DNF", "BOX"].map((label) => (
+      <button
+        key={label}
+        onClick={() =>
+          setManualDistaccoDraft((prev) => ({
+            ...prev,
+            [row.posizione]: label,
+          }))
+        }
+        style={{
+          padding: "6px 10px",
+          borderRadius: 8,
+          border: "1px solid rgba(255,255,255,0.16)",
+          background: "rgba(255,255,255,0.08)",
+          color: "white",
+          cursor: "pointer",
+          fontSize: 11,
+          fontWeight: 800,
+          textTransform: "uppercase",
+        }}
+      >
+        {label}
+      </button>
+    ))}
+  </div>
+</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, flexWrap: "wrap" }}>
+              <button
+                onClick={() => setShowDistaccoModal(false)}
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: 14,
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  background: "rgba(255,255,255,0.06)",
+                  color: "white",
+                  cursor: "pointer",
+                  fontWeight: 900,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                Chiudi
+              </button>
+
+              <button
+                onClick={resetDistaccoCorrections}
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: 14,
+                  border: "1px solid rgba(255,255,255,0.14)",
+                  background: "rgba(255,255,255,0.06)",
+                  color: "white",
+                  cursor: "pointer",
+                  fontWeight: 900,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                }}
+              >
+                Reset
+              </button>
+
+              <button
+                onClick={applyDistaccoCorrections}
+                style={{
+                  padding: "12px 16px",
+                  borderRadius: 14,
+                  border: "1px solid rgba(160,90,255,0.30)",
+                  background: "rgba(160,90,255,0.20)",
+                  color: "white",
+                  cursor: "pointer",
+                  fontWeight: 900,
+                  textTransform: "uppercase",
+                  letterSpacing: 0.5,
+                  boxShadow: "0 0 22px rgba(160,90,255,0.12)",
+                }}
+              >
+                Applica correzioni
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {showAutoModal && (
         <div
           style={{
@@ -3580,7 +4470,7 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
             }}
           >
             <div>
-              <div style={{ fontSize: 22, fontWeight: 900 }}>Correzione Auto Manuale</div>
+              <div style={{ fontSize: 22, fontWeight: 900 }}>Advanced Manual Tweaks</div>
               <div style={{ marginTop: 6, fontSize: 13, opacity: 0.76 }}>
                 Modifica solo le auto non corrette rilevate da OCR. Le correzioni verranno applicate a tabella, CSV e PNG.
               </div>
@@ -3931,10 +4821,15 @@ const dsqComputedRows: DGRowComputed[] = dsqRows
               />
 
               <ResultsTable
-  previewRows={finalRows}
-  exporting={true}
-  tableTitle={`Classifica definitiva Union - ${unionMeta.lega ? unionMeta.lega + " " : ""}Lobby ${formatLobbyShort(unionMeta.lobby)}${effectiveGara ? ` Gara ${effectiveGara}` : ""}`}
-/>
+                previewRows={finalRows}
+                exporting={true}
+                roundFinalMode={isRoundFinal}
+                tableTitle={
+                  isRoundFinal
+                    ? `Finali di Round – Union Manufacturers Trophy - ${unionMeta.lega ? unionMeta.lega + " " : ""}Lobby ${formatLobbyShort(unionMeta.lobby)}`
+                    : `Classifica definitiva Union - ${unionMeta.lega ? unionMeta.lega + " " : ""}Lobby ${formatLobbyShort(unionMeta.lobby)}${effectiveGara ? ` Gara ${effectiveGara}` : ""}`
+                }
+              />
             </div>
           )}
         </div>
